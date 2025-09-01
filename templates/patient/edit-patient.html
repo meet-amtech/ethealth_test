@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block css %}
+{% endblock %}
+
+{% block content %}
+
+<form method="POST" action="{% url 'template_patient:patient_update' clinic_patient.id %}">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-sm-7 col-6">
+            <h4 class="page-title">Edit Patient</h4>
+        </div>
+        <div class="col-sm-5 col-6 text-right m-b-30">
+            <button class="btn btn-primary submit-btn" type="submit">Save</button>
+        </div>
+    </div>
+    <div class="card-box">
+        <h3 class="card-title">Basic Informations</h3>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="profile-img-wrap">
+                    <img class="inline-block" src="{{ clinic_patient.patient.user.avatar.url }}" alt="user">
+                    <div class="fileupload btn">
+                        <span class="btn-text">edit</span>
+                        <input class="upload" type="file" id="avatar" name="avatar">
+                    </div>
+                </div>
+                <div class="profile-basic">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Name</label>
+                                <input type="text" class="form-control floating" name="name" value="{{ clinic_patient.patient.user.name }}" disabled>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Phone</label>
+                                <input type="text" class="form-control floating" name="phone" value="{{ clinic_patient.patient.user.phone }}" disabled>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Email</label>
+                                <input type="text" class="form-control floating" name="email" value="{{ clinic_patient.patient.user.email|default:'' }}" disabled>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Birth Date</label>
+                                <div class="cal-icon">
+                                    <input class="form-control floating datetimepicker" type="text" name="date_of_birth" value="{{ clinic_patient.patient.user.date_of_birth|format_date }}" disabled>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Gender</label>
+                                {% if clinic_patient.patient.user.gender is None %}
+                                    <input type="text" class="form-control floating" name="gender" value="" disabled>
+                                {% else %}
+                                    {% for gender_data in gender %}
+                                        {% if clinic_patient.patient.user.gender == gender_data.0 %}
+                                            <input type="text" class="form-control floating" name="gender" value="{{ gender_data.1 }}" disabled>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                                {% comment %} <input type="text" class="form-control floating" name="gender" value="{{ clinic_patient.patient.user.gender|default:'-' }}" disabled> {% endcomment %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Nick Name</label>
+                                <input type="text" class="form-control floating" name="patient_nickname" value="{{ clinic_patient.patient_nickname|default:"" }}">
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="form-group form-focus" style="height: auto;">
+                                <label class="focus-label">Note</label>
+                                <textarea class="form-control floating" name="note" style="height: 100px; resize: none;">{{ clinic_patient.note|default:'' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-box">
+        <h3 class="card-title">Contact Informations</h3>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group form-focus">
+                    <label class="focus-label">Address Line 1</label>
+                    <input type="text" class="form-control floating" name="address_line1" value="{{ clinic_patient.patient.user.address|get_address_info:'line1'}}" disabled>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">City</label>
+                    <input type="text" class="form-control floating" name="address_city" value="{{ clinic_patient.patient.user.address|get_address_info:'city'}}" disabled>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">State</label>
+                    <input type="text" class="form-control floating" name="address_state" value="{{ clinic_patient.patient.user.address|get_address_info:'state'}}" disabled>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">Country</label>
+                    <input type="text" class="form-control floating" name="address_country" value="{{ clinic_patient.patient.user.address|get_address_info:'country'}}" disabled>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">Postal Code</label>
+                    <input type="text" class="form-control floating" name="address_postal_code" value="{{ clinic_patient.patient.user.address|get_address_info:'postal_code'}}" disabled>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block script %}
+{% endblock %}

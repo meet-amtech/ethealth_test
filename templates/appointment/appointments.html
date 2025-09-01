@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block css %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/dataTables.bootstrap4.min.css' %}">
+
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-sm-4 col-3">
+        <h4 class="page-title">Appointments</h4>
+    </div>
+    <div class="col-sm-8 col-9 text-right m-b-20">
+        <a href="{% url 'template_appointment:appointment_create' %}" class="btn btn btn-primary btn-rounded float-right"><i class="fa fa-plus"></i> Add Appointment</a>
+    </div>
+</div>
+<!-- Filters -->
+<div class="row filter-row">
+    <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12"></div>
+    <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12"></div>
+    <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12">
+        <div class="form-group form-focus">
+            <label class="focus-label">Patient Name</label>
+            <input type="text" id="patient_name" class="form-control floating" value="{{filters.patient_name|default:''}}">
+        </div>
+    </div>
+    <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12">
+        <div class="form-group form-focus">
+            <label class="focus-label">From</label>
+            <div class="cal-icon">
+                <input type="text" id="start_date" class="form-control floating datetimepicker">
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12">
+        <div class="form-group form-focus">
+            <label class="focus-label">To</label>
+            <div class="cal-icon">
+                <input type="text" id="end_date" class="form-control floating datetimepicker">
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12">
+        <button type="button" id="filter_date" class="btn btn-success btn-block" onclick="validateAndFilter()">Search</button>
+        <script>
+            // Function to reinitialize floating labels
+            function reinitializeFloatingLabels() {
+                document.querySelectorAll('.form-control.floating').forEach((input) => {
+                    const formGroup = input.closest('.form-group');
+                    if (input.value) {
+                        formGroup.classList.add('focused');
+                    } else {
+                        formGroup.classList.remove('focused');
+                    }
+
+                    input.addEventListener('focus', () => {
+                        formGroup.classList.add('focused');
+                    });
+
+                    input.addEventListener('blur', () => {
+                        if (!input.value) {
+                            formGroup.classList.remove('focused');
+                        }
+                    });
+                });
+            }
+
+            function validateAndFilter() {
+              const startDate = document.getElementById('start_date').value;
+              const endDate = document.getElementById('end_date').value;
+              const patientName = document.getElementById('patient_name').value;
+
+              if (!startDate || !endDate) {
+                alert('Please select both start and end dates');
+                return;
+              }
+
+              if (startDate > endDate) {
+                alert('Start date must be less than end date');
+                return;
+              }
+
+              const baseUrl = "{% url 'template_appointment:appointments_list' %}";
+              window.location.href = `${baseUrl}?start_date=${startDate}&end_date=${endDate}&patient_name=${patientName}`;
+            }
+
+            // Prefill the input fields with values from the URL query parameters
+            function prefillDates() {
+              const urlParams = new URLSearchParams(window.location.search);
+              let startDate = urlParams.get('start_date');
+              let endDate = urlParams.get('end_date');
+
+              // Set default values if query parameters are not present
+              const today = new Date().toLocaleDateString('en-GB'); // Get today's date in DD/MM/YYYY format
+              if (!startDate) {
+                startDate = today; // Default to today's date
+              }
+              if (!endDate) {
+                endDate = today; // Default to today's date
+              }
+
+              document.getElementById('start_date').value = startDate;
+              document.getElementById('end_date').value = endDate;
+
+              // Reinitialize floating labels
+              reinitializeFloatingLabels();
+            }
+          
+            // Call prefillDates on page load
+            window.onload = prefillDates;
+        </script>
+    </div>
+</div>
+<!-- Table content -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="table-responsive">
+            <table class="table table-striped custom-table datatable">
+                <thead>
+                    <tr>
+                        <th>Token</th>
+                        <th>Patient Name</th>
+                        <th>Age</th>
+                        <th>Doctor Name</th>
+                        <th>Appointment Date</th>
+                        <th>Appointment Time</th>
+                        <th>Height</th>
+                        <th>Weight</th>
+                        <th>Status</th>
+                        <th class="text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appointment_request in appointment_requests %}
+                        <tr>
+                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment_request.id %}';">{{ appointment_request.request_token }}</td>
+                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment_request.id %}';">
+                                <img width="28" height="28" src="
+                                    {% if appointment_request.appointment %}
+                                        {{ appointment_request.appointment.clinic_patient.patient.user.avatar.url }}
+                                    {% else %}
+                                        {% static 'assets/img/user.jpg' %}
+                                    {% endif%}" class="rounded-circle m-r-5" alt="">
+                                {{ appointment_request.name }}
+                            </td>
+                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment_request.id %}';">{% if appointment_request.age %} {{ appointment_request.age }} {% else %} - {% endif %}</td>
+                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment_request.id %}';">{% if appointment_request.clinic_user.user.name %} {{ appointment_request.clinic_user.user.name }} {% else %} - {% endif %}</td>
+                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment_request.id %}';">{% if appointment_request.date_str %} {{ appointment_request.date_str }} {% else %} - {% endif %}</td>
+                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment_request.id %}';">{% if appointment_request.start_time_str %} {{ appointment_request.start_time_str }} {% endif %} - {% if appointment_request.end_time_str %} {{ appointment_request.end_time_str }} {% endif %}</td>
+                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment_request.id %}';">{% if appointment_request.appointment.height %} {{ appointment_request.appointment.height }} ft {% else %} - {% endif %}</td>
+                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment_request.id %}';">{% if appointment_request.appointment.weight %} {{ appointment_request.appointment.weight }} kg {% else %} - {% endif %}</td>
+                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment_request.id %}';">
+                                {% if appointment_request.appointment %}
+                                    <span class="custom-badge status-green">
+                                        {{ appointment_request.appointment.appointment_status }}
+                                    </span>
+                                {% else %}
+                                    <span class="custom-badge status-red">
+                                        {{ appointment_request.appointment_request_status }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-right">
+                                <div class="dropdown dropdown-action">
+                                    <a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i class="fa fa-ellipsis-v"></i></a>
+                                    <div class="dropdown-menu dropdown-menu-right">
+                                        {% if request.user == appointment_request.clinic_user.user %}
+                                        <a class="dropdown-item" href="{% url 'template_appointment:appointment_update' appointment_request.id %}">
+                                            <i class="fa fa-pencil m-r-5"></i>
+                                            Edit
+                                        </a>
+                                        {% endif %}
+                                        <a class="dropdown-item delete-appointment-link" href="#" data-url="{% url 'template_appointment:appointment_delete' appointment_request.id %}" data-toggle="modal" data-target="#delete_appointment">
+                                            <i class="fa fa-trash-o m-r-5"></i>
+                                            Delete
+                                        </a>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="delete_appointment" class="modal fade delete-modal" role="dialog">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <img src="{% static 'assets/img/sent.png' %}" alt="" width="50" height="46">
+                <h3>Are you sure want to delete this Appointment?</h3>
+                <div class="m-t-20">
+                    <a href="#" class="btn btn-white" data-dismiss="modal">Close</a>
+                    <button type="button" class="btn btn-danger delete-appointment-btn">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap4.min.js' %}"></script>
+
+<script>
+    $(document).on('click', '.delete-appointment-link', function () {
+        // Get the delete URL from the clicked link
+        const deleteUrl = $(this).data('url');
+
+        // Update the delete button's onclick attribute with the delete URL
+        $('.delete-appointment-btn').attr('onclick', `window.location.href='${deleteUrl}'`);
+    });
+    $(function () {
+        $('.datetimepicker').datetimepicker({
+            format: 'DD/MM/YYYY'
+        });
+    });
+</script>
+{% endblock %}

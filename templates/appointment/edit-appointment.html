@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block css %}
+{% endblock %}
+
+{% block content %}
+
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <h4 class="page-title"> Appointment - {{ appointment_request.request_token }} </h4>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <form method="POST" action="{% url 'template_appointment:appointment_update' appointment_request.id %}">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Doctor</label>
+                        <input class="form-control" type="text" value="{{ appointment_request.clinic_user.user.name }}" readonly="">
+                    </div>
+                </div>
+                <div class="col-md-6"></div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Patient Name</label>
+                        <input class="form-control" type="text" value="{{ appointment_request.name }}" readonly="">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Patient Phone Number</label>
+                        <input class="form-control" type="text" value="{{ appointment_request.phone }}" readonly="">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Height (in feets)</label>
+                        <input type="text" class="form-control" name="height" value="{{ appointment_request.appointment.height|default:'' }}">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Weight (in kgs)</label>
+                        <input type="text" class="form-control" name="weight" value="{{ appointment_request.appointment.weight|default:'' }}">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Start Time</label>
+                        <div class="time-icon">
+                            <input type="text" class="form-control" id="datetimepicker3" name="start_time" value="{{ appointment_request.start_time }}">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>End Time</label>
+                        <div class="time-icon">
+                            <input type="text" class="form-control" id="datetimepicker4" name="end_time" value="{{ appointment_request.end_time }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Date</label>
+                        <div class="cal-icon">
+                            <input type="text" class="form-control datetimepicker" name="date" value="{{ appointment_request.date|date:'d/m/Y' }}">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Amount To Pay</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">₹</span>
+                            </div>
+                            <input class="form-control" type="number" min="0" name="amount_to_pay"  value="{{ appointment_request.appointment.amount_to_pay | default:0 }}">
+                        </div>
+                    </div>
+                </div>
+                {% comment %} <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Appointment Status</label>
+                        <select class="form-control" name="appointment_request_status">
+                            <option value="requested" {% if appointment_request.appointment_request_status == 'requested' %}selected{% endif %}>Requested</option>
+                            <option value="completed" {% if appointment_request.appointment_request_status == 'completed' %}selected{% endif %}>Completed</option>
+                        </select>
+                    </div>
+                </div> {% endcomment %}
+            </div>
+            <div class="m-t-20 text-center">
+                <button id="save-appointment" class="btn btn-primary submit-btn" type="submit">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+
+<script>
+
+    $(function () {
+        $('#datetimepicker3').datetimepicker({
+            format: 'LT'
+        });
+        $('#datetimepicker4').datetimepicker({
+            format: 'LT'
+        });
+    });
+
+    // Function to focus the button and add an event listener for the Enter key
+    window.onload = function() {
+        const button = document.getElementById('create-appointment');
+        button.focus(); // Focus the button
+        // Add an event listener for the Enter key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                button.click(); // Trigger the button click
+            }
+        });
+    };
+
+</script>
+
+{% endblock %}

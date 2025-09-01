@@ -1,0 +1,113 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+
+<!-- settings23:07-->
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+    <link rel="shortcut icon" type="image/x-icon" href="{% static 'assets/img/favicon.ico' %}">
+    <title>ETHealth</title>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/font-awesome.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/select2.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/style.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/bootstrap-datetimepicker.min.css' %}">
+    <!--[if lt IE 9]>
+		<script src="{% static 'assets/js/html5shiv.min.js' %}"></script>
+		<script src="{% static 'assets/js/respond.min.js' %}"></script>
+	<![endif]-->
+</head>
+
+<body>
+    <div class="main-wrapper">
+
+        {% include "headers.html" %}
+
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-inner slimscroll">
+                <div class="sidebar-menu">
+                    <ul>
+                        <li>
+                            <a href="{% url 'dashboard' %}"><i class="fa fa-home back-icon"></i> <span>Back to Home</span></a>
+                        </li>
+                        <li class="menu-title">Settings</li>
+                        <li class="{% if 'clinics/setting' in request.get_full_path %} active {% endif %}">
+                            <a href="{% url 'template_clinic:settings' %}"><i class="fa fa-building"></i> <span>Clinic Settings</span></a>
+                        </li>
+                        <li class="{% if 'clinics/opening-hours' in request.get_full_path %} active {% endif %}">
+                            <a href="{% url 'template_clinic:opening_hour_list' %}"><i class="fa fa-clock-o"></i> <span>Opening Hours</span></a>
+                        </li>
+                        {% if request.session.is_clinic_admin %}
+                        <li class="{% if 'clinics/theme-setting' in request.get_full_path %} active {% endif %}">
+                            <a href="{% url 'template_clinic:theme_settings' %}"><i class="fa fa-picture-o"></i> <span>Theme Settings</span></a>
+                        </li>
+                        <li class="{% if 'clinics/roles-permission' in request.get_full_path %} active {% endif %}">
+                            <a href="{% url 'template_clinic:roles_and_permission' %}"><i class="fa fa-key"></i> <span>Roles & Permissions</span></a>
+                        </li>
+                        <li>
+                            <a href="email-settings.html"><i class="fa fa-envelope-o"></i> <span>Email Settings</span></a>
+                        </li>
+                        <li>
+                            <a href="invoice-settings.html"><i class="fa fa-pencil-square-o"></i> <span>Invoice Settings</span></a>
+                        </li>
+                        <li>
+                            <a href="salary-settings.html"><i class="fa fa-money"></i> <span>Salary Settings</span></a>
+                        </li>
+                        <li>
+                            <a href="notifications-settings.html"><i class="fa fa-globe"></i> <span>Notifications</span></a>
+                        </li>
+                        <li>
+                            <a href="change-password.html"><i class="fa fa-lock"></i> <span>Change Password</span></a>
+                        </li>
+                        <li>
+                            <a href="leave-type.html"><i class="fa fa-cogs"></i> <span>Leave Type</span></a>
+                        </li>
+                        <li>
+                            <a href="localization.html"><i class="fa fa-clock-o"></i> <span>Localization</span></a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="page-wrapper">
+            <div class="content">
+
+                {% for message in messages %}
+                <div class="{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                {% endfor %}
+
+                {% block content %}
+                {% endblock %}
+
+            </div>
+        </div>
+    </div>
+    <div class="sidebar-overlay" data-reff=""></div>
+    <script src="{% static 'assets/js/jquery-3.2.1.min.js' %}"></script>
+	<script src="{% static 'assets/js/popper.min.js' %}"></script>
+    <script src="{% static 'assets/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/js/jquery.slimscroll.js' %}"></script>
+    <script src="{% static 'assets/js/select2.min.js' %}"></script>
+    <script src="{% static 'assets/js/app.js' %}"></script>
+    <script src="{% static 'assets/js/moment.min.js' %}"></script>
+    <script src="{% static 'assets/js/bootstrap-datetimepicker.min.js' %}"></script>
+
+    {% block script %}
+    {% endblock %}
+
+</body>
+
+
+<!-- settings23:11-->
+</html>

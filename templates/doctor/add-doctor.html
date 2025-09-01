@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block css %}
+{% endblock %}
+
+{% block content %}
+
+<form method="POST" action="{% url 'template_doctor:doctor_create' %}">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-sm-7 col-6">
+            <h4 class="page-title">Add Doctor</h4>
+        </div>
+        <div class="col-sm-5 col-6 text-right m-b-30">
+            <button id="create-doctor" class="btn btn-primary submit-btn" type="submit">Create Doctor</button>
+        </div>
+    </div>
+    <div class="card-box">
+        <h3 class="card-title">Basic Informations</h3>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="profile-img-wrap">
+                    <img class="inline-block" src="{% static 'assets/img/user.jpg' %}" alt="user">
+                    <div class="fileupload btn">
+                        <span class="btn-text">add</span>
+                        <input class="upload" type="file" id="avatar" name="avatar">
+                    </div>
+                </div>
+                <div class="profile-basic">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Name <span style="color: red;">*</span></label>
+                                <input type="text" class="form-control floating" name="name" value="" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Phone <span style="color: red;">*</span></label>
+                                <input type="text" class="form-control floating" name="phone" value="" required pattern="\d{10}" title="Phone number must be 10 digits">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Email</label>
+                                <input type="text" class="form-control floating" name="email" value="">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Specialization</label>
+                                <input type="text" class="form-control floating" name="specialization" value="">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Birth Date</label>
+                                <div class="cal-icon">
+                                    <input class="form-control floating datetimepicker" type="text" name="date_of_birth" value="">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus select-focus">
+                                <label class="focus-label">Gender</label>
+                                <select class="select form-control floating" name="gender">
+                                    <option value="" selected>Select</option>
+                                    {% for gender_data in gender %}
+                                    <option value="{{gender_data.0}}">{{gender_data.1}}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus select-focus">
+                                <label class="focus-label">Role</label>
+                                <select class="select form-control floating" name="role">
+                                    <option value="doctor" selected>Doctor</option>
+                                    <option value="visiting_doctor">Visiting Doctor</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-box">
+        <h3 class="card-title">Contact Informations</h3>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group form-focus">
+                    <label class="focus-label">Address Line 1</label>
+                    <input type="text" class="form-control floating" name="address_line1" value="">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">City</label>
+                    <input type="text" class="form-control floating" name="address_city" value="">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">State</label>
+                    <input type="text" class="form-control floating" name="address_state" value="">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">Country</label>
+                    <input type="text" class="form-control floating" name="address_country" value="">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">Postal Code</label>
+                    <input type="text" class="form-control floating" name="address_postal_code" value="">
+                </div>
+            </div>
+        </div>
+    </div><div class="card-box">
+        <h3 class="card-title">Education Informations</h3>
+        <div id="education-container">
+            <div id="education-template" class="education-form" style="display: none;">
+                <input type="hidden" data-name="education-__index__-id" value="">
+                <div class="blog row">
+                    <div class="col-md-6">
+                        <div class="form-group form-focus">
+                            <label class="focus-label">Institution</label>
+                            <input type="text" class="form-control floating" data-name="education-__index__-institution" value="">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group form-focus">
+                            <label class="focus-label">Degree</label>
+                            <input type="text" class="form-control floating" data-name="education-__index__-degree" value="">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group form-focus">
+                            <label class="focus-label">Starting Year</label>
+                            <input type="number" class="form-control floating" data-name="education-__index__-start_year" value="">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group form-focus">
+                            <label class="focus-label">Complete Year</label>
+                            <input type="number" class="form-control floating" data-name="education-__index__-end_year" value="">
+                        </div>
+                    </div>
+                    <div class="col-md-12 text-right">
+                        <button type="button" class="btn btn-danger remove-education">Remove</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="add-more">
+            <a href="#" class="btn btn-primary add-education"><i class="fa fa-plus"></i> Add More Institute</a>
+        </div>
+    </div>
+
+    <div class="card-box">
+        <h3 class="card-title">Experience Informations</h3>
+        <div id="work-container">
+            <div id="work-template" class="work-form" style="display: none;">
+                <input type="hidden" data-name="work-__index__-id" value="">
+                <div class="blog row">
+                    <div class="col-md-6">
+                        <div class="form-group form-focus">
+                            <label class="focus-label">Hospital Name</label>
+                            <input type="text" class="form-control floating" data-name="work-__index__-hospital_name" value="">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group form-focus">
+                            <label class="focus-label">Job Position</label>
+                            <input type="text" class="form-control floating" data-name="work-__index__-position" value="">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group form-focus">
+                            <label class="focus-label">Period From</label>
+                            <div class="cal-icon">
+                                <input class="form-control floating datetimepicker" type="text" data-name="work-__index__-start_date" value="">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group form-focus">
+                            <label class="focus-label">Period To</label>
+                            <div class="cal-icon">
+                                <input class="form-control floating datetimepicker" type="text" data-name="work-__index__-end_date" value="">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12 text-right">
+                        <button type="button" class="btn btn-danger remove-work">Remove</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="add-more">
+            <a href="#" class="btn btn-primary add-work"><i class="fa fa-plus"></i> Add More Experience</a>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block script %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Initialize floating labels for existing forms
+        reinitializeFloatingLabels();
+
+        // Track removed IDs
+        const removedEducationIdsInput = document.getElementById("removed-education-ids");
+        const removedWorkIdsInput = document.getElementById("removed-work-ids");
+    
+        // Add Education Form
+        let educationCounter = {{ educational_experiences|length }};
+        const addEducationButton = document.querySelector(".add-education");
+        const educationContainer = document.getElementById("education-container");
+        const educationTemplate = document.getElementById("education-template");
+
+        addEducationButton.addEventListener("click", function (e) {
+            e.preventDefault();
+
+            // Clone the hidden template
+            const newEducationForm = educationTemplate.cloneNode(true);
+
+            // Remove the 'style' attribute to make it visible
+            newEducationForm.removeAttribute("style");
+
+            // Remove the 'id' attribute
+            newEducationForm.removeAttribute("id");
+
+            // Replace the placeholder index and set the name attributes
+            newEducationForm.querySelectorAll("[data-name]").forEach((input) => {
+                const name = input.getAttribute("data-name").replace(/__index__/g, educationCounter);
+                input.setAttribute("name", name);
+                input.removeAttribute("data-name");
+            });
+
+            // Append the new form to the container
+            educationContainer.appendChild(newEducationForm);
+
+            // Increment the counter
+            educationCounter++;
+
+            // Reinitialize datetimepicker for the new fields
+            $('.datetimepicker').datetimepicker({
+                format: 'DD/MM/YYYY',
+                icons: {
+                    up: "fa fa-angle-up",
+                    down: "fa fa-angle-down",
+                    next: 'fa fa-angle-right',
+                    previous: 'fa fa-angle-left'
+                }
+            });
+
+            // Reinitialize floating labels
+            reinitializeFloatingLabels();
+        });
+
+        // Remove Education Form
+        educationContainer.addEventListener("click", function (e) {
+            if (e.target.classList.contains("remove-education")) {
+                const educationForm = e.target.closest(".education-form");
+                const educationIdInput = educationForm.querySelector(".education-object-id");
+
+                // If the form has an ID, add it to the removed IDs
+                if (educationIdInput && educationIdInput.value) {
+                    const removedIds = removedEducationIdsInput.value ? removedEducationIdsInput.value.split(",") : [];
+                    removedIds.push(educationIdInput.value);
+                    removedEducationIdsInput.value = removedIds.join(",");
+                }
+
+                // Remove the form from the DOM
+                educationForm.remove();
+            }
+        });
+        
+        // Add Work Form
+        let workCounter = {{ work_experiences|length }};
+        const addWorkButton = document.querySelector(".add-work");
+        const workContainer = document.getElementById("work-container");
+        const workTemplate = document.getElementById("work-template");
+
+        addWorkButton.addEventListener("click", function (e) {
+            e.preventDefault();
+
+            // Clone the hidden template
+            const newWorkForm = workTemplate.cloneNode(true);
+
+            // Remove the 'style' attribute to make it visible
+            newWorkForm.removeAttribute("style");
+
+            // Remove the 'id' attribute
+            newWorkForm.removeAttribute("id");
+
+            // Replace the placeholder index and set the name attributes
+            newWorkForm.querySelectorAll("[data-name]").forEach((input) => {
+                const name = input.getAttribute("data-name").replace(/__index__/g, workCounter);
+                input.setAttribute("name", name);
+                input.removeAttribute("data-name");
+            });
+
+            // Append the new form to the container
+            workContainer.appendChild(newWorkForm);
+
+            // Increment the counter
+            workCounter++;
+
+            // Reinitialize datetimepicker for the new fields
+            $('.datetimepicker').datetimepicker({
+                format: 'DD/MM/YYYY',
+                icons: {
+                    up: "fa fa-angle-up",
+                    down: "fa fa-angle-down",
+                    next: 'fa fa-angle-right',
+                    previous: 'fa fa-angle-left'
+                }
+            });
+
+            // Reinitialize floating labels
+            reinitializeFloatingLabels();
+        });
+
+        // Remove Work Form
+        workContainer.addEventListener("click", function (e) {
+            if (e.target.classList.contains("remove-work")) {
+                const workForm = e.target.closest(".work-form");
+                const workIdInput = workForm.querySelector(".work-object-id");
+
+                // If the form has an ID, add it to the removed IDs
+                if (workIdInput && workIdInput.value) {
+                    const removedIds = removedWorkIdsInput.value ? removedWorkIdsInput.value.split(",") : [];
+                    removedIds.push(workIdInput.value);
+                    removedWorkIdsInput.value = removedIds.join(",");
+                }
+
+                // Remove the form from the DOM
+                workForm.remove();
+            }
+        });
+    });
+
+    function reinitializeFloatingLabels() {
+        document.querySelectorAll('.form-control.floating').forEach((input) => {
+            const formGroup = input.closest('.form-group');
+            if (input.value) {
+                formGroup.classList.add('focused');
+            } else {
+                formGroup.classList.remove('focused');
+            }
+
+            input.addEventListener('focus', () => {
+                formGroup.classList.add('focused');
+            });
+
+            input.addEventListener('blur', () => {
+                if (!input.value) {
+                    formGroup.classList.remove('focused');
+                }
+            });
+        });
+    };
+
+    // Function to focus the button and add an event listener for the Enter key
+    window.onload = function() {
+        const button = document.getElementById('create-doctor');
+        button.focus(); // Focus the button
+        // Add an event listener for the Enter key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                button.click(); // Trigger the button click
+            }
+        });
+    };
+</script>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block css %}
+{% endblock %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-sm-4 col-3">
+    <h4 class="page-title">Schedule</h4>
+  </div>
+  <div class="col-sm-8 col-9 text-right m-b-20">
+    <a href="{% url 'template_doctor:schedule_create' request.session.clinic_user_id %}" class="btn btn btn-primary btn-rounded float-right">
+      <i class="fa fa-plus"></i> Add Schedule
+    </a>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    <div class="table-responsive">
+      <table class="table table-border table-striped custom-table datatable mb-0">
+        <thead>
+          <tr>
+            <th>Doctor Name</th>
+            <th>Specialization</th>
+            <th>Available Days</th>
+            <th>Available Time</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for schedule in schedules %}
+          <tr>
+            <td onclick="window.location.href='{% url 'template_doctor:schedule_update' request.session.clinic_user_id %}?working_hours={{ schedule.ids|join:',' }}'">
+              <img width="28" height="28" src="{{ schedule.doctor_avatar }}" class="rounded-circle m-r-5" alt=""/>
+              {{ schedule.doctor_name }}
+            </td>
+            <td onclick="window.location.href='{% url 'template_doctor:schedule_update' request.session.clinic_user_id %}?working_hours={{ schedule.ids|join:',' }}'">{{ schedule.specialization|default:'' }}</td>
+            <td onclick="window.location.href='{% url 'template_doctor:schedule_update' request.session.clinic_user_id %}?working_hours={{ schedule.ids|join:',' }}'">{{ schedule.available_days|join:", " }}</td>
+            <td onclick="window.location.href='{% url 'template_doctor:schedule_update' request.session.clinic_user_id %}?working_hours={{ schedule.ids|join:',' }}'">{{ schedule.available_time }}</td>
+            <td class="text-right">
+              <div class="dropdown dropdown-action">
+                <a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                  <i class="fa fa-ellipsis-v"></i>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right">
+                  <a class="dropdown-item" href="{% url 'template_doctor:schedule_update' request.session.clinic_user_id %}?working_hours={{ schedule.ids|join:',' }}">
+                    <i class="fa fa-pencil m-r-5"></i>
+                    Edit
+                  </a>
+                  <a class="dropdown-item" href="{% url 'template_doctor:schedule_delete' request.session.clinic_user_id %}?working_hours={{ schedule.ids|join:',' }}"
+                    onclick="return confirm('Are you sure you want to delete this schedule?');">
+                      <i class="fa fa-trash-o m-r-5"></i>
+                      Delete
+                  </a>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center">No schedules found</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block css %}
+{% endblock %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-lg-8 offset-lg-2">
+    <h4 class="page-title">Edit Schedule</h4>
+  </div>
+</div>
+<div class="row">
+  <div class="col-lg-8 offset-lg-2">
+    <form method="POST" action="{% url 'template_doctor:schedule_update' request.session.clinic_user_id %}?working_hours={{ working_hour_ids|join:',' }}">
+      {% if working_hour_ids %}
+        <input type="hidden" name="working_hour_ids" value="{{ working_hour_ids|join:',' }}">
+      {% endif %}
+      {% csrf_token %}
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>Doctor Name</label>
+            <input type="text" class="form-control" value="{{ request.user.name }}" readonly>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>Available Days</label>
+            <select class="select" name="day_of_week" multiple>
+              {% for day_code, day_name in all_week_days.choices %}
+                {% if day_code in available_days_of_week or day_code in days_with_schedule %}
+                <option value="{{ day_code }}" {% if day_code in days_with_schedule %}selected{% endif %}>
+                  {{ day_name }}
+                </option>
+                {% endif %}
+                {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>Start Time</label>
+            <div class="time-icon">
+              <input
+                type="text"
+                class="form-control"
+                id="datetimepicker3"
+                name="start_time"
+                value="{{ start_time|time:'H:i' }}"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>End Time</label>
+            <div class="time-icon">
+              <input
+                type="text"
+                class="form-control"
+                id="datetimepicker4"
+                name="end_time"
+                value="{{ end_time|time:'H:i' }}"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+          <label>Note</label>
+          <textarea cols="30" rows="4" class="form-control" name="note">{{ note }}</textarea>
+      </div>
+      <div class="m-t-20 text-center">
+        <button id="save-schedule" class="btn btn-primary submit-btn" type="submit">
+          Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %} 
+
+{% block script %}
+
+<script>
+  $(function () {
+    $("#datetimepicker3").datetimepicker({
+      format: "LT",
+    });
+  });
+</script>
+<script>
+  $(function () {
+    $("#datetimepicker4").datetimepicker({
+      format: "LT",
+    });
+  });
+
+  // Function to focus the button and add an event listener for the Enter key
+  window.onload = function() {
+    const button = document.getElementById('save-schedule');
+    button.focus(); // Focus the button
+    // Add an event listener for the Enter key
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
+        button.click(); // Trigger the button click
+      }
+    });
+  };
+</script>
+
+{% endblock %}

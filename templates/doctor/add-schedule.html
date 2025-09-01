@@ -1,0 +1,92 @@
+{% extends "base.html" %} {% load static %} {% block css %} {% endblock %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-lg-8 offset-lg-2">
+    <h4 class="page-title">Add Schedule</h4>
+  </div>
+</div>
+<div class="row">
+  <div class="col-lg-8 offset-lg-2">
+    <form method="POST" action="{% url 'template_doctor:schedule_create' request.session.clinic_user_id %}">
+      {% csrf_token %}
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>Doctor Name</label>
+            <input type="text" class="form-control" value="{{ request.user.name }}" readonly>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>Available Days</label>
+            <select class="select" name="day_of_week" multiple required>
+              {% for day_code, day_name in available_days.items %}
+                <option value="{{ day_code }}">
+                  {{ day_name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>Start Time</label>
+            <div class="time-icon">
+              <input type="text" class="form-control" id="datetimepicker3" name="start_time" required/>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>End Time</label>
+            <div class="time-icon">
+              <input type="text" class="form-control" id="datetimepicker4" name="end_time" required/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+          <label>Note</label>
+          <textarea cols="30" rows="4" class="form-control" name="note"></textarea>
+      </div>
+      <div class="m-t-20 text-center">
+        <button id="create-schedule" class="btn btn-primary submit-btn" type="submit">
+          Create Schedule
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+
+<script>
+  $(function () {
+    $("#datetimepicker3").datetimepicker({
+      format: "LT",
+    });
+    $("#datetimepicker4").datetimepicker({
+      format: "LT",
+    });
+  });
+
+  // Function to focus the button and add an event listener for the Enter key
+  window.onload = function() {
+    const button = document.getElementById('create-schedule');
+    button.focus(); // Focus the button
+    // Add an event listener for the Enter key
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
+        button.click(); // Trigger the button click
+      }
+    });
+  };
+</script>
+
+{% endblock %}

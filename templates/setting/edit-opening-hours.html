@@ -1,0 +1,95 @@
+{% extends "setting/settings_base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-lg-8 offset-lg-2">
+    <h4 class="page-title">Edit Opening Hour</h4>
+  </div>
+</div>
+<div class="row">
+  <div class="col-lg-8 offset-lg-2">
+    <form method="POST" action="{% url 'template_clinic:opening_hour_update' request.session.clinic_id %}?{{ href_query_params }}">
+      {% csrf_token %}
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>Clinic Name</label>
+            <input type="text" class="form-control" value="{{ request.session.clinic_name }}" readonly>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>Available Days</label>
+            <select class="select" name="selected_days" multiple>
+              {% if available_days|length == 0 %}
+              <option value=""> Select </option>
+              {% else %}
+              {% for day in available_days %}
+                <option value="{{ day }}" {% if day in days_with_schedule %} selected {% endif %} > {{ day }} </option>
+              {% endfor %}
+              {% endif %}
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>Start Time</label>
+            <div class="time-icon">
+              <input type="text" class="form-control" id="datetimepicker3" name="start_time" value="{{ start_time }}"/>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>End Time</label>
+            <div class="time-icon">
+              <input type="text" class="form-control" id="datetimepicker4" name="end_time" value="{{ end_time }}"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="m-t-20 text-center">
+        <button id="save-opening-hours" class="btn btn-primary submit-btn" type="submit">
+          Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+
+<script>
+  $(function () {
+    $("#datetimepicker3").datetimepicker({
+      format: "LT",
+    });
+  });
+
+  $(function () {
+    $("#datetimepicker4").datetimepicker({
+      format: "LT",
+    });
+  });
+
+  // Function to focus the button and add an event listener for the Enter key
+  window.onload = function() {
+    const button = document.getElementById('save-opening-hours');
+    button.focus(); // Focus the button
+    // Add an event listener for the Enter key
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
+        button.click(); // Trigger the button click
+      }
+    });
+  };
+</script>
+
+{% endblock %}

@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block content %}
+
+<div class="row">
+    <div class="col-sm-7 col-6">
+        <h4 class="page-title">My Profile</h4>
+    </div>
+
+    <div class="col-sm-5 col-6 text-right m-b-30">
+        {% if doctor.user.id == request.user.id %}
+            <a href="{% url 'template_doctor:doctor_update' doctor.id %}" class="btn btn-primary btn-rounded"><i class="fa fa-plus"></i> Edit Profile</a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- personal info -->
+<div class="card-box profile-header">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="profile-view">
+                <div class="profile-img-wrap">
+                    <div class="profile-img">
+                        <a><img class="avatar" src="{{ doctor.user.avatar.url }}" alt=""></a>
+                    </div>
+                </div>
+                <div class="profile-basic">
+                    <div class="row">
+                        <div class="col-md-5">
+                            <div class="profile-info-left mb-3">
+                                <h3 class="user-name m-t-0 mb-0">{{ doctor.user.name|default:'' }}</h3>
+                                <div class="text-muted">{{ doctor.specialization|default:'-' }} </div>
+                                <div class="staff-msg">Gender: {{ doctor.user.gender|get_gender_display }}</div>
+                                <div class="staff-id">Birthday: {% if doctor.user.date_of_birth %} {{ doctor.user.date_of_birth|format_date }} {% endif %}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-7">
+                            <ul class="personal-info">
+                                <li>
+                                    <span class="title">Phone:</span>
+                                    <span class="text"><a href="#">{% if doctor.user.phone %} {{ doctor.user.phone }} {% endif %}</a></span>
+                                </li>
+                                <li>
+                                    <span class="title">Email:</span>
+                                    <span class="text"><a href="#">{% if doctor.user.email %} {{ doctor.user.email }} {% else %}- {% endif %}</a></span>
+                                </li>
+                                <li>
+                                    <span class="title">Address:</span>
+                                    {% if address %}
+                                    <div class="address-wrapper">
+                                        <div class="row">
+                                                {% if address|get_address_info:"line1" %}
+                                                    <div class="col-md-12 address-line">
+                                                        <i class="fa fa-map-marker"></i> {{ address|get_address_info:"line1" }}
+                                                    </div>
+                                                {% endif %}
+                                                {% if address|get_address_info:"city" %}
+                                                    <div class="col-md-6 address-line">
+                                                        <i class="fa fa-building"></i> {{ address|get_address_info:"city" }}
+                                                    </div>
+                                                {% endif %}
+                                                {% if address|get_address_info:"state" %}
+                                                    <div class="col-md-6 address-line">
+                                                        <i class="fa fa-map"></i> {{ address|get_address_info:"state" }}
+                                                    </div>
+                                                {% endif %}
+                                                {% if address|get_address_info:"country" %}
+                                                    <div class="col-md-6 address-line">
+                                                        <i class="fa fa-globe"></i> {{ address|get_address_info:"country" }}
+                                                    </div>
+                                                {% endif %}
+                                                {% if address|get_address_info:"postal_code" %}
+                                                    <div class="col-md-6 address-line">
+                                                        <i class="fa fa-envelope"></i> {{ address|get_address_info:"postal_code" }}
+                                                    </div>
+                                                {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </li>
+                                <style>
+                                    .address-wrapper {
+                                        margin-top: 10px;
+                                        padding: 15px;
+                                        background-color: #f5f5f5; /* Softer background */
+                                        border: 1px solid #ddd;
+                                        border-radius: 8px;
+                                        align-content: flex-end;
+                                    }
+
+                                    .address-line {
+                                        margin-bottom: 8px;
+                                        font-size: 14px;
+                                        color: #333; /* Darker text for better readability */
+                                        display: flex;
+                                        align-items: center;
+                                    }
+
+                                    .address-line i {
+                                        margin-right: 8px;
+                                        color: #007bff; /* Icon color */
+                                    }
+
+                                    .ml-2 {
+                                        margin-left: 8px;
+                                    }
+                                </style>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="col-md-12 pt-3 px-0">
+
+    <!-- appointment settings -->
+    <div class="card-box">
+        <div class="row">
+            <div class="col-md-12">
+                <h3 class="card-title">Appointment Settings</h3>
+                <ul class="personal-info">
+                    <li>
+                        <span class="title">Appointment Checkup time:</span>
+                        <span class="text"><a style="color: inherit;"> {{ doctor.default_appt_slot_duration|default:'0' }} min </a></span>
+                    </li>
+                    <li>
+                        <span class="title">Buffer time between appointments:</span>
+                        <span class="text"><a style="color: inherit;">{{ doctor.appointment_buffer_time|default:'0' }} min </a></span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- education info -->
+    {% if educational_experiences %}
+        <div class="card-box">
+            <h3 class="card-title">Educational Experience</h3>
+            <div class="experience-box">
+                <ul class="experience-list">
+                    {% for educational_experience in educational_experiences %}
+                        <li>
+                            <div class="experience-user">
+                                <div class="before-circle"></div>
+                            </div>
+                            <div class="experience-content">
+                                <div class="timeline-content">
+                                    <a href="#/" class="name">{{ educational_experience.institution }}</a>
+                                    <div>{{ educational_experience.degree }}</div>
+                                    {% if educational_experience.is_ongoing %}
+                                        <span class="time">{% if educational_experience.start_year %} {{ educational_experience.start_year }} {% else %} Unknown {% endif %} - Present</span>
+                                    {% else %}
+                                        <span class="time">{% if educational_experience.start_year %} {{ educational_experience.start_year }} {% else %} Unknown {% endif %} - {% if educational_experience.end_year %} {{ educational_experience.end_year }} {% else %} Unknown {% endif %}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- experience info -->
+    {% if work_experiences %}
+        <div class="card-box mb-0">
+            <h3 class="card-title">Work Experience</h3>
+            <div class="experience-box">
+                <ul class="experience-list">
+                    {% for work_experience in work_experiences %}
+                        <li>
+                            <div class="experience-user">
+                                <div class="before-circle"></div>
+                            </div>
+                            <div class="experience-content">
+                                <div class="timeline-content">
+                                    <a href="#/" class="name">{{ work_experience.position }} at {{ work_experience.hospital_name }}</a>
+                                    {% if work_experience.is_ongoing %}
+                                        <span class="time">{% if work_experience.start_date %} {{ work_experience.start_date }} {% else %} Unknown {% endif %} - Present</span>
+                                    {% else %}
+                                        <span class="time">{% if work_experience.start_date %} {{ work_experience.start_date }} {% else %} Unknown {% endif %} - {% if work_experience.end_date %} {{ work_experience.end_date }} {% else %} Unknown {% endif %}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}

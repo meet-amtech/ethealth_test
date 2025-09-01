@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block css %}
+{% endblock %}
+
+{% block content %}
+
+<form method="POST" action="{% url 'template_clinic:clinic_doctor_update' clinic_id clinic_doctor.doctor.id %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-sm-7 col-6">
+            <h4 class="page-title">Edit Doctor</h4>
+        </div>
+        <div class="col-sm-5 col-6 text-right m-b-30">
+            <button id="save-doctor" class="btn btn-primary submit-btn" type="submit">Save</button>
+        </div>
+    </div>
+    <div class="card-box">
+        <h3 class="card-title">Basic Informations</h3>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="profile-img-wrap">
+                    <img class="inline-block" src="{{ clinic_doctor.doctor.user.avatar.url }}" alt="user">
+                    <div class="fileupload btn">
+                        <span class="btn-text">edit</span>
+                        <input class="upload" type="file" id="avatar" name="avatar">
+                    </div>
+                </div>
+                <div class="profile-basic">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Name</label>
+                                <input type="text" class="form-control floating" name="name" value="{{ clinic_doctor.doctor.user.name }}" disabled>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Specialization</label>
+                                <input type="text" class="form-control floating" name="specialization" value="{{ clinic_doctor.doctor.specialization }}" disabled>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Birth Date</label>
+                                <div class="cal-icon">
+                                    <input class="form-control floating datetimepicker" type="text" name="date_of_birth" value="{{ clinic_doctor.doctor.user.date_of_birth|format_date }}" disabled>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus select-focus">
+                                <label class="focus-label">Gender</label>
+                                <select class="select form-control floating" name="gender">
+                                    <option value="" {% if not doctor.user.gender %}selected{% endif %}>Select</option>
+                                    {% for gender_data in gender %}
+                                    <option value="{{gender_data.0}}" {% if doctor.user.gender == gender_data.0 %}selected{% endif %}>{{gender_data.1}}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Phone</label>
+                                <input type="text" class="form-control floating" name="phone" value="{{ clinic_doctor.doctor.user.phone }}" disabled>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Email</label>
+                                <input type="text" class="form-control floating" name="email" value="{% if clinic_doctor.doctor.user.email is not none %} {{ clinic_doctor.doctor.user.email }} {% endif %}" disabled>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Doctor Role</label>
+                                <select class="form-control floating" name="doctor_role">
+                                    {% for value, label in doctor_role_choices %}
+                                    <option value="{{ value }}" {% if clinic_doctor.doctor_role == label %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-box">
+        <h3 class="card-title">Contact Informations</h3>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group form-focus">
+                    <label class="focus-label">Address Line 1</label>
+                    <input type="text" class="form-control floating" name="address_line1" value="{{ clinic_doctor.doctor.user.address|get_address_info:'line1'}}" disabled>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">City</label>
+                    <input type="text" class="form-control floating" name="address_city" value="{{ clinic_doctor.doctor.user.address|get_address_info:'city'}}" disabled>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">State</label>
+                    <input type="text" class="form-control floating" name="address_state" value="{{ clinic_doctor.doctor.user.address|get_address_info:'state'}}" disabled>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">Country</label>
+                    <input type="text" class="form-control floating" name="address_country" value="{{ clinic_doctor.doctor.user.address|get_address_info:'country'}}" disabled>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">Postal Code</label>
+                    <input type="text" class="form-control floating" name="address_postal_code" value="{{ clinic_doctor.doctor.user.address|get_address_info:'postal_code'}}" disabled>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block script %}
+<script>
+    // Function to focus the button and add an event listener for the Enter key
+    window.onload = function() {
+        const button = document.getElementById('save-doctor');
+        button.focus(); // Focus the button
+        // Add an event listener for the Enter key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                button.click(); // Trigger the button click
+            }
+        });
+    };
+</script>
+{% endblock %}

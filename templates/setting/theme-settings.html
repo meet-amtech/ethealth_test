@@ -1,0 +1,66 @@
+{% extends "setting/settings_base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <form method="POST" action="{% url 'template_clinic:theme_settings' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <h4 class="page-title">Theme Settings</h4>
+            <div class="form-group row">
+                <label class="col-lg-3 col-form-label">Website Name</label>
+                <div class="col-lg-9">
+                    <input name="website_name" class="form-control" value="{% if clinic.website_name %} {{ clinic.website_name }} {% endif %}" type="text">
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-lg-3 col-form-label">Light Logo</label>
+                <div class="col-lg-7">
+                    <input class="upload" type="file" id="id_loght_logo" name="light_logo">
+                    <span class="form-text text-muted">Recommended image size is 40px x 40px</span>
+                </div>
+                <div class="col-lg-2">
+                    <div class="img-thumbnail float-right">
+                        <img src="{{ clinic.light_logo.url }}" alt="" width="40" height="40">
+                    </div>
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-lg-3 col-form-label">Favicon</label>
+                <div class="col-lg-7">
+                    <input class="upload" type="file" id="id_favicon" name="favicon">
+                    <span class="form-text text-muted">Recommended image size is 16px x 16px</span>
+                </div>
+                <div class="col-lg-2">
+                    <div class="settings-image img-thumbnail float-right">
+                        <img src="{{ clinic.favicon.url }}" class="img-fluid" width="16" height="16" alt="">
+                    </div>
+                </div>
+            </div>
+            <div class="m-t-20 text-center">
+                <button id="save-theme-settings" class="btn btn-primary submit-btn" type="submit">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+
+<script>
+    // Function to focus the button and add an event listener for the Enter key
+    window.onload = function() {
+    const button = document.getElementById('save-theme-settings');
+    button.focus(); // Focus the button
+    // Add an event listener for the Enter key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+        button.click(); // Trigger the button click
+        }
+    });
+    };
+</script>
+
+{% endblock %}

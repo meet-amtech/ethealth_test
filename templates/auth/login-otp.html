@@ -1,0 +1,82 @@
+{% extends "auth/login-base.html" %}
+{% load static %}
+
+{% block content %}
+
+{% for message in messages %}
+<div class="{{ message.tags }} alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+{% endfor %}
+
+<form action="{% url 'template_user:verify_otp' %}" method="POST" class="form-signin">
+    {% csrf_token %}
+    <div class="text-center mb-4">
+        <h2 class="welcome-text">Welcome Back!</h2>
+        <p class="text-muted">Please login to access your account</p>
+    </div>
+    <div class="account-logo mb-4">
+        <a><img src="{% static 'assets/img/logo-dark.png' %}" alt=""></a>
+    </div>
+    <div class="form-group">
+        <label class="font-weight-bold">Phone Number</label>
+        <div class="input-group">
+            <div class="input-group-prepend">
+                <span class="input-group-text"><i class="fa fa-phone"></i></span>
+            </div>
+            <input type="tel" name="phone" id="phone" autofocus="" class="form-control" pattern="[0-9]{10}" maxlength="10" placeholder="Enter 10 digit mobile number" disabled value="{{ phone }}">
+            <input type="tel" name="phone" hidden value="{{ phone }}">
+        </div>
+    </div>
+    <div id="otp-section">
+        <div class="form-group text-right">
+            <a href="{% url 'template_user:login' %}" id="change-number" class="text-primary">Change Number</a>
+        </div>
+        <div class="form-group">
+            <label class="font-weight-bold">Enter OTP</label>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fa fa-lock"></i></span>
+                </div>
+                <input type="text" name="otp" id="otp" class="form-control" pattern="[0-9]{6}" maxlength="6" placeholder="Enter 6 digit OTP">
+                <input type="text" name="verification_string" class="form-control" hidden value="{{ verification_string }}">
+            </div>
+        </div>
+        <div class="form-group text-right">
+            <a href="#" id="resend-otp" class="text-primary">Resend OTP</a>
+        </div>
+    </div>
+    <div class="form-group">
+        <button type="submit" id="verify-otp" class="btn btn-primary btn-block btn-lg">Verify & Login</button>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block script %}
+
+<script>
+    // Function to focus the OTP input field and the button, and add an event listener for the Enter key
+    window.onload = function() {
+        // Focus the OTP input field
+        const otpInput = document.getElementById('otp');
+        if (otpInput) {
+            otpInput.focus();
+        }
+
+        // Focus the button and add an event listener for the Enter key
+        const button = document.getElementById('verify-otp');
+        if (button) {
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    button.click(); // Trigger the button click
+                }
+            });
+        }
+    };
+</script>
+
+{% endblock %}

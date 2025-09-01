@@ -1,0 +1,119 @@
+{% load static %}
+{% load custom_filters %}
+
+<style>
+    .profile-options {
+        position: absolute; /* Position it absolutely */
+        top: 50px; /* Adjust based on your header height */
+        left: 0.5px; /* Align to the left */
+        background-color: #009efb; /* Background color */
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Optional shadow for better visibility */
+    }
+</style>
+
+<div class="header" style="z-index:1040;">
+    <div class="header-left">
+        <button id="api-call-button" style="background: none; border: none; outline: none;">
+            <a class="logo">
+                <img src="{{ request.session.clinic_logo_url }}" width="35" height="35" alt="">
+                <span>{{ request.session.clinic_name }}</span>
+            </a>
+        </button>
+        <div id="profile-options" class="profile-options" style="display: none;">
+            {% for clinic_id, user_clinic_details in request.session.user_active_clinics.items %}
+            {% if clinic_id != request.session.clinic_id%}
+            <div class="header-left" style="border: 2px solid black;">
+                <a href="{% url 'template_clinic:clinic_user_change_profile' clinic_id %}" class="logo">
+                    <img src="{{ user_clinic_details.clinic_logo_url }}" width="35" height="35" alt="">
+                    <span>{{ user_clinic_details.clinic_name|default:'ETHealth' }}</span>
+                </a>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    <a id="toggle_btn" href="javascript:void(0);"><i class="fa fa-bars"></i></a>
+    <a id="mobile_btn" class="mobile_btn float-left" href="#sidebar"><i class="fa fa-bars"></i></a>
+    <ul class="nav user-menu float-right">
+        <li class="nav-item dropdown d-none d-sm-block">
+            <a href="#" class="dropdown-toggle nav-link" data-toggle="dropdown">
+                <i class="fa fa-bell-o"></i>
+                <span class="badge badge-pill bg-danger float-right">3</span>
+            </a>
+            <div class="dropdown-menu notifications">
+                <div class="topnav-dropdown-header">
+                    <span>Notifications</span>
+                </div>
+                <div class="drop-scroll">
+                    <ul class="notification-list">
+                        <li class="notification-message">
+                            <a href="activities.html">
+                                <div class="media">
+                                    <span class="avatar">
+                                        <img alt="John Doe" src=" {% static 'assets/img/user.jpg' %}" class="img-fluid">
+                                    </span>
+                                    <div class="media-body">
+                                        <p class="noti-details"><span class="noti-title">John Doe</span> added new task <span class="noti-title">Patient appointment booking</span></p>
+                                        <p class="noti-time"><span class="notification-time">4 mins ago</span></p>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                        <li class="notification-message">
+                            <a href="activities.html">
+                                <div class="media">
+                                    <span class="avatar">V</span>
+                                    <div class="media-body">
+                                        <p class="noti-details"><span class="noti-title">Tarah Shropshire</span> changed the task name <span class="noti-title">Appointment booking with payment gateway</span></p>
+                                        <p class="noti-time"><span class="notification-time">6 mins ago</span></p>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="topnav-dropdown-footer">
+                    <a href="activities.html">View all Notifications</a>
+                </div>
+            </div>
+        </li>
+        <li class="nav-item dropdown d-none d-sm-block">
+            <a href="javascript:void(0);" id="open_msg_box" class="hasnotifications nav-link">
+                <i class="fa fa-comment-o"></i>
+                <span class="badge badge-pill bg-danger float-right">8</span>
+            </a>
+        </li>
+        <li class="nav-item dropdown has-arrow">
+            <a href="#" class="dropdown-toggle nav-link user-link" data-toggle="dropdown">
+                <span class="user-img">
+                    <img class="rounded-circle" src="{{ request.user.avatar.url }}" width="40" alt="">
+                    <span class="status online"></span>
+                </span>
+                <span>{{ request.user.name }}</span>
+            </a>
+            <div class="dropdown-menu">
+                <a class="dropdown-item" href="{% url 'template_doctor:doctor_detail' request.session.clinic_user_id %}">My Profile</a>
+                <a class="dropdown-item" href="{% url 'template_clinic:settings' %}">Settings</a>
+                <a class="dropdown-item" href="{% url 'template_user:logout' %}">Logout</a>
+            </div>
+        </li>
+    </ul>
+    <div class="dropdown mobile-user-menu float-right">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+            <i class="fa fa-ellipsis-v"></i>
+        </a>
+        <div class="dropdown-menu dropdown-menu-right">
+            <a class="dropdown-item" href="{% url 'template_doctor:doctor_detail' request.session.clinic_user_id %}">My Profile</a>
+            <a class="dropdown-item" href="{% url 'template_clinic:settings' %}">Settings</a>
+            <a class="dropdown-item" href="{% url 'template_user:logout' %}">Logout</a>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    document.getElementById('api-call-button').addEventListener('click', function() {
+        const profileOptions = document.getElementById('profile-options');
+        profileOptions.style.display = profileOptions.style.display === 'none' ? 'block' : 'none';
+    });
+</script>

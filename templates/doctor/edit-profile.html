@@ -1,0 +1,493 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block css %}
+{% endblock %}
+
+{% block content %}
+
+<form method="POST" action="{% url 'template_doctor:doctor_update' doctor.id %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-sm-7 col-6">
+            <h4 class="page-title">Edit Profile</h4>
+        </div>
+        <div class="col-sm-5 col-6 text-right m-b-30">
+            <button id="save-profile" class="btn btn-primary submit-btn" type="submit">Save</button>
+        </div>
+    </div>
+
+    <!-- basic info -->
+    <div class="card-box">
+        <h3 class="card-title">Basic Informations</h3>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="profile-img-wrap">
+                    <img class="inline-block" src="{{ doctor.user.avatar.url }}" alt="user">
+                    <div class="fileupload btn">
+                        <span class="btn-text">edit</span>
+                        <input class="upload" type="file" id="avatar" name="avatar">
+                    </div>
+                </div>
+                <div class="profile-basic">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Name</label>
+                                <input type="text" class="form-control floating" name="name" value="{{ doctor.user.name }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Specialization</label>
+                                <input type="text" class="form-control floating" name="specialization" value="{{ doctor.specialization|default:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Birth Date</label>
+                                <div class="cal-icon">
+                                    <input class="form-control floating datetimepicker" type="text" name="date_of_birth" value="{{ doctor.user.date_of_birth|format_date }}">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus select-focus">
+                                <label class="focus-label">Gender</label>
+                                <select class="select form-control floating" name="gender">
+                                    <option value="" {% if not doctor.user.gender %}selected{% endif %}>Select</option>
+                                    {% for gender_data in gender %}
+                                    <option value="{{gender_data.0}}" {% if doctor.user.gender == gender_data.0 %}selected{% endif %}>{{gender_data.1}}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Phone</label>
+                                <input type="text" class="form-control floating" name="phone" value="{{ doctor.user.phone }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Email</label>
+                                <input type="text" class="form-control floating" name="email" value="{{ doctor.user.email|default:'' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- contact info -->
+    <div class="card-box">
+        <h3 class="card-title">Contact Informations</h3>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group form-focus">
+                    <label class="focus-label">Address Line 1</label>
+                    <input type="text" class="form-control floating" name="address_line1" value="{{ address|get_address_info:'line1'}}">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">City</label>
+                    <input type="text" class="form-control floating" name="address_city" value="{{ address|get_address_info:'city'}}">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">State</label>
+                    <input type="text" class="form-control floating" name="address_state" value="{{ address|get_address_info:'state'}}">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">Country</label>
+                    <input type="text" class="form-control floating" name="address_country" value="{{ address|get_address_info:'country'}}">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">Postal Code</label>
+                    <input type="text" class="form-control floating" name="address_postal_code" value="{{ address|get_address_info:'postal_code'}}">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- appointment settings -->
+    <div class="card-box">
+        <h3 class="card-title">Appointment Settings</h3>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">Appointment Checkup time (In minutes)</label>
+                    <input type="number" min="1" class="form-control floating" name="default_appt_slot_duration" value="{{ doctor.default_appt_slot_duration }}">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">Buffer time between appointments (In minutes)</label>
+                    <input type="number" min="0" class="form-control floating" name="appointment_buffer_time" value="{{ doctor.appointment_buffer_time }}">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- education info -->
+    <div class="card-box">
+        <h3 class="card-title">Education Informations</h3>
+        <div id="education-container">
+            <!-- Hidden input for removed educational experience IDs -->
+            <input type="hidden" id="removed-education-ids" name="removed_education_ids" value="">
+            
+            {% for educational_experience in educational_experiences %}
+                <div class="education-form">
+                    <input type="hidden" name="education-{{ forloop.counter0 }}-id" value="{{ educational_experience.id }}">
+                    <div class="blog row">
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Institution</label>
+                                <input type="hidden" class="education-object-id" value="{{ educational_experience.id }}">
+                                <input type="text" class="form-control floating" name="education-{{ forloop.counter0 }}-institution" value="{{ educational_experience.institution }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Degree</label>
+                                <input type="text" class="form-control floating" name="education-{{ forloop.counter0 }}-degree" value="{{ educational_experience.degree }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Starting Year</label>
+                                <input type="number" class="form-control floating" name="education-{{ forloop.counter0 }}-start_year" value="{{ educational_experience.start_year }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Complete Year</label>
+                                {% if educational_experience.is_ongoing %}
+                                    <input type="number" class="form-control floating" name="education-{{ forloop.counter0 }}-end_year" value="{% now 'Y' %}">
+                                {% else %}
+                                    <input type="number" class="form-control floating" name="education-{{ forloop.counter0 }}-end_year" value="{{ educational_experience.end_year }}">
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-12 text-right">
+                            <button type="button" class="btn btn-danger remove-education">Remove</button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            <div id="education-template" class="education-form" style="display: none;">
+                <input type="hidden" data-name="education-__index__-id" value="">
+                <div class="blog row">
+                    <div class="col-md-6">
+                        <div class="form-group form-focus">
+                            <label class="focus-label">Institution</label>
+                            <input type="text" class="form-control floating" data-name="education-__index__-institution" value="">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group form-focus">
+                            <label class="focus-label">Degree</label>
+                            <input type="text" class="form-control floating" data-name="education-__index__-degree" value="">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group form-focus">
+                            <label class="focus-label">Starting Year</label>
+                            <input type="number" class="form-control floating" data-name="education-__index__-start_year" value="">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group form-focus">
+                            <label class="focus-label">Complete Year</label>
+                            <input type="number" class="form-control floating" data-name="education-__index__-end_year" value="">
+                        </div>
+                    </div>
+                    <div class="col-md-12 text-right">
+                        <button type="button" class="btn btn-danger remove-education">Remove</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="add-more">
+            <a href="#" class="btn btn-primary add-education"><i class="fa fa-plus"></i> Add More Institute</a>
+        </div>
+    </div>
+
+    <!-- experience info -->
+    <div class="card-box">
+        <h3 class="card-title">Experience Informations</h3>
+        <div id="work-container">
+            <!-- Hidden input for removed work experience IDs -->
+            <input type="hidden" id="removed-work-ids" name="removed_work_ids" value="">
+
+            {% for work_experience in work_experiences %}
+                <div class="work-form">
+                    <input type="hidden" name="work-{{ forloop.counter0 }}-id" value="{{ work_experience.id }}">
+                    <div class="blog row">
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Hospital Name</label>
+                                <input type="hidden" class="work-object-id" value="{{ work_experience.id }}">
+                                <input type="text" class="form-control floating" name="work-{{ forloop.counter0 }}-hospital_name" value="{{ work_experience.hospital_name }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Job Position</label>
+                                <input type="text" class="form-control floating" name="work-{{ forloop.counter0 }}-position" value="{{ work_experience.position }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Period From</label>
+                                <div class="cal-icon">
+                                    <input class="form-control floating datetimepicker" type="text" name="work-{{ forloop.counter0 }}-start_date" value="{{ work_experience.start_date }}">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Period To</label>
+                                <div class="cal-icon">
+                                    {% if work_experience.is_ongoing %}
+                                        <input class="form-control floating datetimepicker" type="text" name="work-{{ forloop.counter0 }}-end_date" value="{% now 'd-m-Y' %}">
+                                    {% else %}
+                                        <input class="form-control floating datetimepicker" type="text" name="work-{{ forloop.counter0 }}-end_date" value="{{ work_experience.end_date }}">
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-12 text-right">
+                            <button type="button" class="btn btn-danger remove-work">Remove</button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+
+            <div id="work-template" class="work-form" style="display: none;">
+                <input type="hidden" data-name="work-__index__-id" value="">
+                <div class="blog row">
+                    <div class="col-md-6">
+                        <div class="form-group form-focus">
+                            <label class="focus-label">Hospital Name</label>
+                            <input type="text" class="form-control floating" data-name="work-__index__-hospital_name" value="">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group form-focus">
+                            <label class="focus-label">Job Position</label>
+                            <input type="text" class="form-control floating" data-name="work-__index__-position" value="">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group form-focus">
+                            <label class="focus-label">Period From</label>
+                            <div class="cal-icon">
+                                <input class="form-control floating datetimepicker" type="text" data-name="work-__index__-start_date" value="">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group form-focus">
+                            <label class="focus-label">Period To</label>
+                            <div class="cal-icon">
+                                <input class="form-control floating datetimepicker" type="text" data-name="work-__index__-end_date" value="">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12 text-right">
+                        <button type="button" class="btn btn-danger remove-work">Remove</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="add-more">
+            <a href="#" class="btn btn-primary add-work"><i class="fa fa-plus"></i> Add More Experience</a>
+        </div>
+    </div>
+
+</form>
+
+{% endblock %}
+
+{% block script %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Initialize floating labels for existing forms
+        reinitializeFloatingLabels();
+
+        // Track removed IDs
+        const removedEducationIdsInput = document.getElementById("removed-education-ids");
+        const removedWorkIdsInput = document.getElementById("removed-work-ids");
+    
+        // Add Education Form
+        let educationCounter = {{ educational_experiences|length }};
+        const addEducationButton = document.querySelector(".add-education");
+        const educationContainer = document.getElementById("education-container");
+        const educationTemplate = document.getElementById("education-template");
+
+        addEducationButton.addEventListener("click", function (e) {
+            e.preventDefault();
+
+            // Clone the hidden template
+            const newEducationForm = educationTemplate.cloneNode(true);
+
+            // Remove the 'style' attribute to make it visible
+            newEducationForm.removeAttribute("style");
+
+            // Remove the 'id' attribute
+            newEducationForm.removeAttribute("id");
+
+            // Replace the placeholder index and set the name attributes
+            newEducationForm.querySelectorAll("[data-name]").forEach((input) => {
+                const name = input.getAttribute("data-name").replace(/__index__/g, educationCounter);
+                input.setAttribute("name", name);
+                input.removeAttribute("data-name");
+            });
+
+            // Append the new form to the container
+            educationContainer.appendChild(newEducationForm);
+
+            // Increment the counter
+            educationCounter++;
+
+            // Reinitialize datetimepicker for the new fields
+            $('.datetimepicker').datetimepicker({
+                format: 'DD/MM/YYYY',
+                icons: {
+                    up: "fa fa-angle-up",
+                    down: "fa fa-angle-down",
+                    next: 'fa fa-angle-right',
+                    previous: 'fa fa-angle-left'
+                }
+            });
+
+            // Reinitialize floating labels
+            reinitializeFloatingLabels();
+        });
+
+        // Remove Education Form
+        educationContainer.addEventListener("click", function (e) {
+            if (e.target.classList.contains("remove-education")) {
+                const educationForm = e.target.closest(".education-form");
+                const educationIdInput = educationForm.querySelector(".education-object-id");
+    
+                // If the form has an ID, add it to the removed IDs
+                if (educationIdInput && educationIdInput.value) {
+                    const removedIds = removedEducationIdsInput.value ? removedEducationIdsInput.value.split(",") : [];
+                    removedIds.push(educationIdInput.value);
+                    removedEducationIdsInput.value = removedIds.join(",");
+                }
+
+                // Remove the form from the DOM
+                educationForm.remove();
+            }
+        });
+        
+        // Add Work Form
+        let workCounter = {{ work_experiences|length }};
+        const addWorkButton = document.querySelector(".add-work");
+        const workContainer = document.getElementById("work-container");
+        const workTemplate = document.getElementById("work-template");
+
+        addWorkButton.addEventListener("click", function (e) {
+            e.preventDefault();
+
+            // Clone the hidden template
+            const newWorkForm = workTemplate.cloneNode(true);
+
+            // Remove the 'style' attribute to make it visible
+            newWorkForm.removeAttribute("style");
+
+            // Remove the 'id' attribute
+            newWorkForm.removeAttribute("id");
+
+            // Replace the placeholder index and set the name attributes
+            newWorkForm.querySelectorAll("[data-name]").forEach((input) => {
+                const name = input.getAttribute("data-name").replace(/__index__/g, workCounter);
+                input.setAttribute("name", name);
+                input.removeAttribute("data-name");
+            });
+
+            // Append the new form to the container
+            workContainer.appendChild(newWorkForm);
+
+            // Increment the counter
+            workCounter++;
+
+            // Reinitialize datetimepicker for the new fields
+            $('.datetimepicker').datetimepicker({
+                format: 'DD/MM/YYYY',
+                icons: {
+                    up: "fa fa-angle-up",
+                    down: "fa fa-angle-down",
+                    next: 'fa fa-angle-right',
+                    previous: 'fa fa-angle-left'
+                }
+            });
+
+            // Reinitialize floating labels
+            reinitializeFloatingLabels();
+        });
+
+        // Remove Work Form
+        workContainer.addEventListener("click", function (e) {
+            if (e.target.classList.contains("remove-work")) {
+                const workForm = e.target.closest(".work-form");
+                const workIdInput = workForm.querySelector(".work-object-id");
+
+                // If the form has an ID, add it to the removed IDs
+                if (workIdInput && workIdInput.value) {
+                    const removedIds = removedWorkIdsInput.value ? removedWorkIdsInput.value.split(",") : [];
+                    removedIds.push(workIdInput.value);
+                    removedWorkIdsInput.value = removedIds.join(",");
+                }
+
+                // Remove the form from the DOM
+                workForm.remove();
+            }
+        });
+    });
+
+    function reinitializeFloatingLabels() {
+        document.querySelectorAll('.form-control.floating').forEach((input) => {
+            const formGroup = input.closest('.form-group');
+            if (input.value) {
+                formGroup.classList.add('focused');
+            } else {
+                formGroup.classList.remove('focused');
+            }
+
+            input.addEventListener('focus', () => {
+                formGroup.classList.add('focused');
+            });
+
+            input.addEventListener('blur', () => {
+                if (!input.value) {
+                    formGroup.classList.remove('focused');
+                }
+            });
+        });
+    }
+
+    // Function to focus the button and add an event listener for the Enter key
+    window.onload = function() {
+        const button = document.getElementById('save-profile');
+        button.focus(); // Focus the button
+        // Add an event listener for the Enter key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                button.click(); // Trigger the button click
+            }
+        });
+    };
+</script>
+{% endblock %}

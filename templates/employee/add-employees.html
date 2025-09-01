@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block css %}
+{% endblock %}
+
+{% block content %}
+
+<form method="POST" action="{% url 'template_clinic:employees_create' %}">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-sm-7 col-6">
+            <h4 class="page-title">Add Employee</h4>
+        </div>
+        <div class="col-sm-5 col-6 text-right m-b-30">
+            <button id="create-employee" class="btn btn-primary submit-btn" type="submit">Create Employee</button>
+        </div>
+    </div>
+    <div class="card-box">
+        <h3 class="card-title">Basic Informations</h3>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="profile-img-wrap">
+                    {% comment %} <img class="inline-block" src="{{ doctor.user.avatar.url }}" alt="user"> {% endcomment %}
+                    <img class="inline-block" src="{% static 'assets/img/user.jpg' %}" alt="user">
+                    <div class="fileupload btn">
+                        <span class="btn-text">add</span>
+                        <input class="upload" type="file" id="avatar" name="avatar">
+                    </div>
+                </div>
+                <div class="profile-basic">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Name <span style="color: red;">*</span></label>
+                                <input type="text" class="form-control floating" name="name" value="" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Phone <span style="color: red;">*</span></label>
+                                <input type="text" class="form-control floating" name="phone" value="" required pattern="\d{10}" title="Phone number must be 10 digits">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Email</label>
+                                <input type="text" class="form-control floating" name="email" value="">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus">
+                                <label class="focus-label">Birth Date</label>
+                                <div class="cal-icon">
+                                    <input class="form-control floating datetimepicker" type="text" name="date_of_birth" value="">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group form-focus select-focus">
+                                <label class="focus-label">Gender</label>
+                                <select class="select form-control floating" name="gender">
+                                    <option value="" selected>Select</option>
+                                    {% for gender_data in gender %}
+                                    <option value="{{gender_data.0}}">{{gender_data.1}}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-box">
+        <h3 class="card-title">Contact Informations</h3>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group form-focus">
+                    <label class="focus-label">Address Line 1</label>
+                    <input type="text" class="form-control floating" name="address_line1" value="">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">City</label>
+                    <input type="text" class="form-control floating" name="address_city" value="">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">State</label>
+                    <input type="text" class="form-control floating" name="address_state" value="">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">Country</label>
+                    <input type="text" class="form-control floating" name="address_country" value="">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group form-focus">
+                    <label class="focus-label">Postal Code</label>
+                    <input type="text" class="form-control floating" name="address_postal_code" value="">
+                </div>
+            </div>
+        </div>
+    </div>
+
+</form>
+
+{% endblock %}
+
+{% block script %}
+<script>
+    // Function to focus the button and add an event listener for the Enter key
+    window.onload = function() {
+        const button = document.getElementById('create-employee');
+        button.focus(); // Focus the button
+        // Add an event listener for the Enter key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                button.click(); // Trigger the button click
+            }
+        });
+    };
+</script>
+{% endblock %}

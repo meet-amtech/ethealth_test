@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block css %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/dataTables.bootstrap4.min.css' %}">
+
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-sm-8 col-6">
+        <h4 class="page-title">Leave Request</h4>
+    </div>
+    <div class="col-sm-4 col-6 text-right m-b-30">
+        <a href="{% url 'template_clinic:leave_create' %}" class="btn btn-primary btn-rounded float-right"><i class="fa fa-plus"></i> Add Leave</a>
+    </div>
+</div>
+
+<!-- filters -->
+<div class="row filter-row">
+    <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12">
+    </div>
+    <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12">
+    </div>
+    <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12">
+        <div class="form-group form-focus">
+            <label class="focus-label">Employee Name</label>
+            <input type="text" id='employee_name' class="form-control floating">
+        </div>
+    </div>
+    <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12">
+        <div class="form-group form-focus">
+            <label class="focus-label">From</label>
+            <div class="cal-icon">
+                <input class="form-control floating datetimepicker" id="start_date" type="text">
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12">
+        <div class="form-group form-focus">
+            <label class="focus-label">To</label>
+            <div class="cal-icon">
+                <input class="form-control floating datetimepicker" id="end_date" type="text">
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12">
+        <button type="button" id="filter_date" class="btn btn-success btn-block" onclick="validateAndFilter()">Search</button>
+        <script>
+            // Function to reinitialize floating labels
+            function reinitializeFloatingLabels() {
+                document.querySelectorAll('.form-control.floating').forEach((input) => {
+                    const formGroup = input.closest('.form-group');
+                    if (input.value) {
+                        formGroup.classList.add('focused');
+                    } else {
+                        formGroup.classList.remove('focused');
+                    }
+
+                    input.addEventListener('focus', () => {
+                        formGroup.classList.add('focused');
+                    });
+
+                    input.addEventListener('blur', () => {
+                        if (!input.value) {
+                            formGroup.classList.remove('focused');
+                        }
+                    });
+                });
+            }
+
+            function validateAndFilter() {
+              const startDate = document.getElementById('start_date').value;
+              const endDate = document.getElementById('end_date').value;
+              const employeeName = document.getElementById('employee_name').value;
+
+              if (!startDate || !endDate) {
+                alert('Please select both start and end dates');
+                return;
+              }
+
+              if (startDate > endDate) {
+                alert('Start date must be less than end date');
+                return;
+              }
+
+              const baseUrl = "{% url 'template_clinic:leaves_list' %}";
+              window.location.href = `${baseUrl}?start_date=${startDate}&end_date=${endDate}&employee_name=${employeeName}`;
+            }
+
+             // Prefill the input fields with values from the URL query parameters
+            function prefillDates() {
+              const urlParams = new URLSearchParams(window.location.search);
+              let startDate = urlParams.get('start_date');
+              let endDate = urlParams.get('end_date');
+              let employeeName = urlParams.get('employee_name');
+
+              // Set default values if query parameters are not present
+              const today = new Date().toLocaleDateString('en-GB'); // Get today's date in DD/MM/YYYY format
+              if (!startDate) {
+                startDate = today; // Default to today's date
+              }
+              if (!endDate) {
+                endDate = today; // Default to today's date
+              }
+
+              document.getElementById('start_date').value = startDate;
+              document.getElementById('end_date').value = endDate;
+              document.getElementById('employee_name').value = employeeName;
+
+              // Reinitialize floating labels
+              reinitializeFloatingLabels();
+            }
+
+            // Call prefillDates on page load
+            window.onload = prefillDates;
+        </script>
+    </div>
+</div>
+
+<!-- table -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="table-responsive">
+            <table class="table table-striped custom-table mb-0 datatable">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>From</th>
+                        <th>To</th>
+                        <th>No of Days</th>
+                        <th>Reason</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for clinic_user_leave in clinc_user_leaves %}
+                    <tr>
+                        <td>
+                            <a href="profile.html" class="avatar">R</a>
+                            <h2><a href="#">{{clinic_user_leave.name}} <span>{{clinic_user_leave.role}}</span></a></h2>
+                        </td>
+                        <td>{{clinic_user_leave.start_date}}</td>
+                        <td>{{clinic_user_leave.end_date}}</td>
+                        <td>{{clinic_user_leave.day_count}}</td>
+                        <td>{{clinic_user_leave.description}}</td>
+                        <td class="text-right">
+                            <div class="dropdown dropdown-action">
+                                <a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i class="fa fa-ellipsis-v"></i></a>
+                                <div class="dropdown-menu dropdown-menu-right">
+                                    <a class="dropdown-item" href="{% url 'template_clinic:leave_update' clinic_user_leave.id %}"><i class="fa fa-pencil m-r-5"></i> Edit</a>
+                                        <a class="dropdown-item" href="*" title="Decline" data-toggle="modal" data-target="#delete_approve"><i class="fa fa-trash-o m-r-5"></i> Delete</a>
+                                </div>
+                            </div>
+                        </td>
+
+                        <div id="delete_approve" class="modal fade delete-modal" role="dialog">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-body text-center">
+                                        <img src="{% static 'assets/img/sent.png' %}" alt="" width="50" height="46">
+                                        <h3>Are you sure want to delete this Leave Request?</h3>
+                                        <div class="m-t-20">
+                                            <a href="#" class="btn btn-white" data-dismiss="modal">Close</a>
+                                            <button type="button"  class="btn btn-danger" onclick="window.location.href='{% url 'template_clinic:leave_delete' clinic_user_leave.id %}'">Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block other_content %}
+{% endblock %}
+
+{% block script %}
+
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap4.min.js' %}"></script>
+
+{% endblock %}

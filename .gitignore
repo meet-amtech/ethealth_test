@@ -1,0 +1,11 @@
+.env
+.DS_Store
+.idea/
+*.pyc
+logs/
+media/
+mig
+
+*.sqlite3
+**/migrations/*
+staticfiles

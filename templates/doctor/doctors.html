@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block css %}
+{% endblock %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-sm-4 col-3">
+    <h4 class="page-title">Doctors</h4>
+  </div>
+  {% if request.session.is_clinic_admin %}
+  <div class="col-sm-8 col-9 text-right m-b-20">
+    <a href="{% url 'template_doctor:doctor_create' %}" class="btn btn-primary btn-rounded float-right">
+        <i class="fa fa-plus"></i>
+        Add Doctor
+    </a>
+  </div>
+  {% endif %}
+</div>
+<div class="row doctor-grid">
+  {% for doctor in doctors %}
+  <div class="col-md-4 col-sm-4 col-lg-3">
+    <div class="profile-widget">
+      {% if doctor.is_admin %}
+        <i class="fa fa-user-circle fa-2x" style="position: absolute; top: 10px; left: 10px; "></i>
+      {% endif %}
+      <div class="doctor-img">
+        <a class="avatar" href="{% url 'template_doctor:doctor_detail' doctor.id %}">
+            <img alt="" src="{{ doctor.user.avatar.url }}"/>
+        </a>
+      </div>
+
+      <!-- Clinic Admin actions -->
+      {% if request.session.is_clinic_admin %}
+      <div class="dropdown profile-action">
+        <a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i class="fa fa-ellipsis-v"></i></a>
+        <div class="dropdown-menu dropdown-menu-right">
+          {% if doctor.user.id == request.user.id %}
+            <a class="dropdown-item" href="{% url 'template_doctor:doctor_update' doctor.id %}">
+                <i class="fa fa-pencil m-r-5"></i>
+                Edit
+            </a>
+          {% endif %}
+          {% if doctor.user.id != request.user.id %}
+              <a class="dropdown-item delete-doctor-link" href="#" data-toggle="modal" data-target="#delete_doctor">
+                  <i class="fa fa-trash-o m-r-5"></i>
+                  Delete
+              </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Other users actions -->
+      {% if not request.session.is_clinic_admin and doctor.user.id == request.user.id %}
+      <div class="dropdown profile-action">
+        <a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i class="fa fa-ellipsis-v"></i></a>
+        <div class="dropdown-menu dropdown-menu-right">
+        <a class="dropdown-item" href="{% url 'template_doctor:doctor_update' doctor.id %}">
+            <i class="fa fa-pencil m-r-5"></i>
+            Edit
+        </a>
+        </div>
+      </div>
+      {% endif %}
+
+      <h4 class="doctor-name text-ellipsis">
+        <a href="{% url 'template_doctor:doctor_detail' doctor.id %}">
+            {{ doctor.user.name }}
+        </a>
+      </h4>
+      <div class="doc-prof">{% if doctor.specialization %} {{ doctor.specialization }} {% else %} - {% endif %}</div>
+        <div class="user-country">
+          <i class="fa fa-map-marker"></i>
+          {{ doctor.user.address|get_address_info:"country" }}
+        </div>
+      </div>
+    </div>
+    {% if doctor.user.id != request.user.id %}
+    <div id="delete_doctor" class="modal fade delete-modal" role="dialog">
+      <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+              <div class="modal-body text-center">
+                  <img src="{% static 'assets/img/sent.png' %}" alt="" width="50" height="46">
+                  <h3>Are you sure want to delete this Doctor?</h3>
+                  <div class="m-t-20">
+                      <a class="btn btn-white" data-dismiss="modal">Close</a>
+                      <button type="button"  class="btn btn-danger" onclick="window.location.href='{% url 'template_clinic:clinic_user_delete' request.session.clinic_id doctor.user.id %}'">Delete</button>
+                  </div>
+              </div>
+          </div>
+      </div>
+    </div>
+    {% endif %}
+  {% endfor %}
+</div>
+
+{% endblock %}
+
+{% block script %}
+
+<script>
+  $(document).on('click', '.delete-doctor-link', function () {
+      // Get the delete URL from the clicked link
+      const deleteUrl = $(this).data('url');
+
+      // Update the delete button's onclick attribute with the delete URL
+      $('.delete-doctor-btn').attr('onclick', `window.location.href='${deleteUrl}'`);
+  });
+</script>
+
+{% endblock %}

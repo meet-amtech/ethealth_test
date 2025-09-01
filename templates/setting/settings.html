@@ -1,0 +1,144 @@
+{% extends "setting/settings_base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block content %}
+
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <form method="POST" action="{% url 'template_clinic:settings' %}">
+            {% csrf_token %}
+            <h3 class="page-title">Clinic Settings</h3>
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label>Hospital Name <span class="text-danger">*</span></label>
+                        <input class="form-control" type="text" name="name" value="{{ clinic.name }}" {% if not request.session.is_clinic_admin %} readonly {% endif %}>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label>Contact Person</label>
+                        <input class="form-control " type="text" name="user" value="{{ request.user.name }}" readonly="">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="form-group">
+                        <label>Address</label>
+                        <input class="form-control " type="text" name="address_line1" value="{{ clinic.address|get_address_info:"line1" }}" {% if not request.session.is_clinic_admin %} readonly {% endif %}>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-6 col-lg-3">
+                    <div class="form-group">
+                        <label>Country</label>
+                        <input class="form-control" type="text" name="address_country" value="{{ clinic.address|get_address_info:"country" }}" {% if not request.session.is_clinic_admin %} readonly {% endif %}>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-6 col-lg-3">
+                    <div class="form-group">
+                        <label>City</label>
+                        <input class="form-control" type="text" name="address_city" value="{{ clinic.address|get_address_info:"city" }}" {% if not request.session.is_clinic_admin %} readonly {% endif %}>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-6 col-lg-3">
+                    <div class="form-group">
+                        <label>State/Province</label>
+                        <input class="form-control" type="text" name="address_state" value="{{ clinic.address|get_address_info:"state" }}" {% if not request.session.is_clinic_admin %} readonly {% endif %}>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-6 col-lg-3">
+                    <div class="form-group">
+                        <label>Postal Code</label>
+                        <input class="form-control" type="text" name="address_postal_code" value="{{ clinic.address|get_address_info:"postal_code" }}" {% if not request.session.is_clinic_admin %} readonly {% endif %}>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input class="form-control" type="email" name="email" value="{% if clinic.email %} {{ clinic.email }} {% endif %}" {% if not request.session.is_clinic_admin %} readonly {% endif %}>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label>Mobile Number</label>
+                        <input class="form-control" type="text" name="phone_number" value="{{ clinic.phone_number }}" {% if not request.session.is_clinic_admin %} readonly {% endif %}>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="form-group">
+                        <label>Website URL</label>
+                        <input class="form-control" type="text" name="website_url" value="{% if clinic.website_url %} {{ clinic.website_url }} {% endif %}" {% if not request.session.is_clinic_admin %} readonly {% endif %}>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-6 col-md-6 col-lg-3">
+                    <div class="form-group">
+                        <label class="gen-label">Status</label>
+                        <div class="form-check-inline">
+                            <label class="form-check-label">
+                                <input type="radio" name="is_active" class="form-check-input" {% if clinic.is_active %} checked {% endif %} value="true" {% if not request.session.clinic_user_role|is_permission_granted:'doctor, staff' and not request.session.is_clinic_admin %} disabled {% endif %} >Open
+                            </label>
+                        </div>
+                        <div class="form-check-inline">
+                            <label class="form-check-label">
+                                <input type="radio" name="is_active" class="form-check-input" {% if not clinic.is_active %} checked {% endif %} value="false" {% if not request.session.clinic_user_role|is_permission_granted:'doctor, staff' and not request.session.is_clinic_admin %} disabled {% endif %} >Closed
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-6 col-lg-3">
+                    <div class="form-group">
+                        <label class="gen-label">Token</label>
+                        <div class="checkbox">
+                            <label class="form-check-label">
+                                <input type="checkbox" name="reset_token" {% if clinic.reset_token %} checked {% endif %} {% if not request.session.clinic_user_role|is_permission_granted:'doctor, staff' and not request.session.is_clinic_admin %} disabled {% endif %}> Reset
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-12">
+                    <div class="form-group">
+                        <label>Auth Token</label>
+                        <div class="input-group">
+                            <textarea class="form-control" wrap="soft" readonly>{{ clinic.auth_token }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% if request.session.clinic_user_role|is_permission_granted:'doctor, staff' or request.session.is_clinic_admin %}
+            <div class="row">
+                <div class="col-sm-12 text-center m-t-20">
+                    <button id="save-settings" type="submit" class="btn btn-primary submit-btn">Save</button>
+                </div>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+
+<script>
+    // Function to focus the button and add an event listener for the Enter key
+    window.onload = function() {
+    const button = document.getElementById('save-settings');
+    button.focus(); // Focus the button
+    // Add an event listener for the Enter key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+        button.click(); // Trigger the button click
+        }
+    });
+    };
+</script>
+
+{% endblock %}
