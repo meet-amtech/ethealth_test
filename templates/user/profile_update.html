@@ -1,0 +1,457 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block css %}
+<style>
+    .profile-img-wrap {
+        position: relative;
+        width: 150px;
+        height: 150px;
+        margin: 0 auto 20px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 3px solid #e0e0e0;
+        background: #f8f9fa;
+    }
+    .profile-img-wrap img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .profile-img-wrap .default-avatar {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+        color: #6c757d;
+        background: #e9ecef;
+    }
+    .fileupload {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0,0,0,0.7);
+        text-align: center;
+        padding: 8px 0;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+    .fileupload:hover {
+        background: rgba(0,0,0,0.8);
+    }
+    .fileupload .btn-text {
+        color: #fff;
+        font-size: 11px;
+        font-weight: 500;
+    }
+    .fileupload input[type="file"] {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+    .card-box {
+        margin-bottom: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        border: 1px solid #e9ecef;
+        padding: 25px;
+    }
+    .card-title {
+        color: #333;
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #007bff;
+        display: flex;
+        align-items: center;
+    }
+    .card-title i {
+        margin-right: 8px;
+        color: #007bff;
+    }
+    .form-group label {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 5px;
+    }
+    .form-control {
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.15);
+    }
+    .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+        padding: 10px 20px;
+        font-weight: 500;
+    }
+    .btn-secondary {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        padding: 10px 20px;
+        font-weight: 500;
+    }
+    .page-header {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+        border-left: 4px solid #007bff;
+    }
+    .breadcrumb {
+        background: transparent;
+        padding: 0;
+        margin: 0;
+    }
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: ">";
+        color: #6c757d;
+    }
+    .age-display {
+        background: #e9ecef;
+        padding: 10px 12px;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #495057;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="page-header">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h3 class="page-title">Edit Profile</h3>
+                    <ul class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'template_user:user_profile' %}">My Profile</a></li>
+                        <li class="breadcrumb-item active">Edit Profile</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <form id="profile-form" method="POST" action="{% url 'template_user:user_profile_update' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+
+                <!-- Basic Information -->
+                <div class="card-box">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h4 class="card-title"><i class="fa fa-user"></i> Basic Information</h4>
+                        </div>
+                        
+                        <!-- Profile Picture -->
+                        <div class="col-md-4 text-center mb-4">
+                            <div class="profile-img-wrap">
+                                {% if user.avatar %}
+                                    <img id="avatar-preview" src="{{ user.avatar.url }}" alt="Profile Picture">
+                                {% else %}
+                                    <div class="default-avatar">
+                                        <i class="fa fa-user"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="fileupload">
+                                    <span class="btn-text">Change Photo</span>
+                                    <input type="file" id="avatar" name="avatar" accept="image/*">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Personal Details -->
+                        <div class="col-md-8">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Full Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="name" 
+                                               value="{{ clinic_user.name|default:'' }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Phone Number <span class="text-danger">*</span></label>
+                                        <input type="tel" class="form-control" name="phone_number" 
+                                               value="{{ user.phone_number|default:'' }}" required readonly>
+                                        <small class="form-text text-muted">Phone number cannot be changed</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Date of Birth</label>
+                                        <input type="date" class="form-control" name="date_of_birth" 
+                                               value="{% if clinic_user.date_of_birth %}{{ clinic_user.date_of_birth|date:'Y-m-d' }}{% endif %}">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Gender</label>
+                                        <select class="form-control" name="gender">
+                                            <option value="">Select Gender</option>
+                                            <option value="male" {% if clinic_user.gender == 'male' %}selected{% endif %}>Male</option>
+                                            <option value="female" {% if clinic_user.gender == 'female' %}selected{% endif %}>Female</option>
+                                            <option value="other" {% if clinic_user.gender == 'other' %}selected{% endif %}>Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Age</label>
+                                        <input type="number" class="form-control" name="age" 
+                                               value="{{ clinic_user.age|default:'' }}" 
+                                               min="0" max="150" placeholder="Enter age">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="card-box">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h4 class="card-title"><i class="fa fa-address-card"></i> Contact Information</h4>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label>Address Line 1</label>
+                                <input type="text" class="form-control" name="address_line1" 
+                                       value="{{ address|get_address_info:'line1'|default:'' }}" 
+                                       placeholder="House/Flat number, Street name">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>City</label>
+                                <input type="text" class="form-control" name="address_city" 
+                                       value="{{ address|get_address_info:'city'|default:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>State/Province</label>
+                                <input type="text" class="form-control" name="address_state" 
+                                       value="{{ address|get_address_info:'state'|default:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Country</label>
+                                <input type="text" class="form-control" name="address_country" 
+                                       value="{{ address|get_address_info:'country'|default:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Postal Code</label>
+                                <input type="text" class="form-control" name="address_postal_code" 
+                                       value="{{ address|get_address_info:'postal_code'|default:'' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="row">
+                    <div class="col-md-12 text-center">
+                        <button type="submit" class="btn btn-primary btn-lg mr-3">
+                            <i class="fa fa-save"></i> Save Changes
+                        </button>
+                        <a href="{% url 'template_user:user_profile' %}" class="btn btn-secondary btn-lg">
+                            <i class="fa fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block script %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Handle avatar preview
+        const avatarInput = document.getElementById('avatar');
+        const profileImgWrap = document.querySelector('.profile-img-wrap');
+        
+        if (avatarInput && profileImgWrap) {
+            avatarInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file && file.type.match('image.*')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        // Remove default avatar if exists
+                        const defaultAvatar = profileImgWrap.querySelector('.default-avatar');
+                        if (defaultAvatar) {
+                            defaultAvatar.remove();
+                        }
+                        
+                        // Create or update image element
+                        let avatarPreview = profileImgWrap.querySelector('#avatar-preview');
+                        if (!avatarPreview) {
+                            avatarPreview = document.createElement('img');
+                            avatarPreview.id = 'avatar-preview';
+                            avatarPreview.alt = 'Profile Picture';
+                            profileImgWrap.insertBefore(avatarPreview, profileImgWrap.querySelector('.fileupload'));
+                        }
+                        avatarPreview.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        // Auto-calculate age from date of birth
+        const dobInput = document.querySelector('input[name="date_of_birth"]');
+        const ageDisplay = document.querySelector('.age-display');
+        
+        if (dobInput && ageDisplay) {
+            dobInput.addEventListener('change', function() {
+                const dob = new Date(this.value);
+                if (dob) {
+                    const today = new Date();
+                    let age = today.getFullYear() - dob.getFullYear();
+                    const monthDiff = today.getMonth() - dob.getMonth();
+                    
+                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+                        age--;
+                    }
+                    
+                    if (age >= 0 && age <= 150) {
+                        ageDisplay.innerHTML = age + ' years old';
+                    } else {
+                        ageDisplay.innerHTML = 'Invalid date of birth';
+                    }
+                }
+            });
+        }
+
+        // Form validation with better UX
+        const form = document.getElementById('profile-form');
+        if (form) {
+            // Real-time validation
+            const requiredFields = form.querySelectorAll('[required]');
+            requiredFields.forEach(field => {
+                field.addEventListener('blur', function() {
+                    validateField(this);
+                });
+                
+                field.addEventListener('input', function() {
+                    if (this.classList.contains('is-invalid')) {
+                        validateField(this);
+                    }
+                });
+            });
+            
+            // Form submit validation
+            form.addEventListener('submit', function(e) {
+                let isValid = true;
+                
+                requiredFields.forEach(field => {
+                    if (!validateField(field)) {
+                        isValid = false;
+                    }
+                });
+
+                if (!isValid) {
+                    e.preventDefault();
+                    // Scroll to first error
+                    const firstError = form.querySelector('.is-invalid');
+                    if (firstError) {
+                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        firstError.focus();
+                    }
+                    
+                    // Show error message
+                    showMessage('Please fill in all required fields correctly.', 'error');
+                } else {
+                    // Show loading state
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Saving...';
+                    }
+                }
+            });
+        }
+        
+        function validateField(field) {
+            const value = field.value.trim();
+            let isValid = true;
+            
+            if (field.hasAttribute('required') && !value) {
+                isValid = false;
+            }
+            
+            // Phone number validation
+            if (field.name === 'phone_number' && value) {
+                const phoneRegex = /^\d{10}$/;
+                if (!phoneRegex.test(value)) {
+                    isValid = false;
+                }
+            }
+            
+            if (isValid) {
+                field.classList.remove('is-invalid');
+                field.classList.add('is-valid');
+            } else {
+                field.classList.remove('is-valid');
+                field.classList.add('is-invalid');
+            }
+            
+            return isValid;
+        }
+        
+        function showMessage(message, type) {
+            // Create alert if it doesn't exist
+            let alert = document.querySelector('.dynamic-alert');
+            if (!alert) {
+                alert = document.createElement('div');
+                alert.className = 'alert alert-dismissible fade show dynamic-alert';
+                alert.style.position = 'fixed';
+                alert.style.top = '20px';
+                alert.style.right = '20px';
+                alert.style.zIndex = '9999';
+                alert.style.minWidth = '300px';
+                document.body.appendChild(alert);
+            }
+            
+            alert.className = `alert alert-${type === 'error' ? 'danger' : 'success'} alert-dismissible fade show dynamic-alert`;
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="close" data-dismiss="alert">
+                    <span>&times;</span>
+                </button>
+            `;
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                if (alert) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+    });
+</script>
+{% endblock %}

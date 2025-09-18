@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="content">
+        <div class="page-header">
+            <div class="page-title">
+                <h4>Doctor Schedule Management</h4>
+                <h6>Manage doctor availability and schedules</h6>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Doctor</th>
+                                {% for day in weekdays %}
+                                <th>{{ day.1 }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doctor, availability in availability_data.items %}
+                            <tr>
+                                <td>
+                                    <h2 class="table-avatar">
+                                        <a href="#" class="avatar avatar-sm me-2">
+                                            <img class="avatar-img rounded-circle" src="{% static 'assets/img/doctors/doctor-thumb-01.jpg' %}" alt="User Image">
+                                        </a>
+                                        <a href="#">{{ doctor.name }} <span>{{ doctor.get_role_display }}</span></a>
+                                    </h2>
+                                </td>
+                                {% for day in weekdays %}
+                                <td>
+                                    {% with slot=availability|get_item:day.0 %}
+                                    <div class="doctor-schedule">
+                                        <div class="schedule-time">
+                                            <span>{{ slot.start_time|time:"H:i" }} - {{ slot.end_time|time:"H:i" }}</span>
+                                            {% if slot.break_start and slot.break_end %}
+                                            <br><small class="text-muted">Break: {{ slot.break_start|time:"H:i" }} - {{ slot.break_end|time:"H:i" }}</small>
+                                            {% endif %}
+                                        </div>
+                                        <a href="{% url 'doctor_availability:update_doctor_schedule' slot.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                    </div>
+                                    {% endwith %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+    // Add any custom JavaScript here if needed
+    $(document).ready(function() {
+        // Initialize any plugins or custom scripts
+    });
+</script>
+{% endblock %}

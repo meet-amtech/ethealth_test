@@ -81,37 +81,37 @@ class EncryptionDecryption:
         return dec_data.decode("utf-8")
 
 
-# def set_request_session_values(request, clinic_id=None):
-#     if not clinic_id:
-#         clinic_id = request.session.get('clinic_id')
+def set_request_session_values(request, clinic_id=None):
+    if not clinic_id:
+        clinic_id = request.session.get('clinic_id')
 
-#     from apps.clinic.models import ClinicUser
-#     clinic_user = ClinicUser.objects.filter(clinic_id=clinic_id, user=request.user).first()
-#     assert clinic_user, "Please pass valid clinic_id."
+    from apps.clinic.models import ClinicUser
+    clinic_user = ClinicUser.objects.filter(clinic_id=clinic_id, user=request.user).first()
+    assert clinic_user, "Please pass valid clinic_id."
 
-#     user_id = clinic_user.user.id
-#     user_active_clinics = {}
-#     user_clinics = ClinicUser.get_active_clinic_users(user_id=user_id)
-#     for user_clinic in user_clinics:
-#         user_active_clinics[str(user_clinic.clinic_id)] = {
-#             'clinic_logo_url': user_clinic.clinic.light_logo.url,
-#             'clinic_name': user_clinic.clinic.name
-#         }
+    user_id = clinic_user.user.id
+    user_active_clinics = {}
+    # user_clinics = ClinicUser.get_active_clinic_users(user_id=user_id)
+    # for user_clinic in user_clinics:
+    #     user_active_clinics[str(user_clinic.clinic_id)] = {
+    #         'clinic_logo_url': user_clinic.clinic.light_logo.url,
+    #         'clinic_name': user_clinic.clinic.name
+    #     }
 
-#     # Set clinic and clinic user details in session
-#     request.session['clinic_id'] = str(clinic_user.clinic.id)
-#     request.session['clinic_user_id'] = str(clinic_user.id)
-#     request.session['clinic_user_role'] = str(clinic_user.role)
-#     request.session['clinic_logo_url'] = str(clinic_user.clinic.light_logo.url)
-#     request.session['clinic_favicon_url'] = str(clinic_user.clinic.favicon.url)
-#     request.session['clinic_name'] = str(clinic_user.clinic.name)
-#     request.session['is_clinic_admin'] = clinic_user.is_admin
-#     request.session['user_active_clinics'] = user_active_clinics
+    # Set clinic and clinic user details in session
+    request.session['clinic_id'] = str(clinic_user.clinic.id)
+    request.session['clinic_user_id'] = str(clinic_user.id)
+    request.session['clinic_user_name'] = str(clinic_user.name)
+    request.session['clinic_user_role'] = str(clinic_user.role)
+    request.session['clinic_name'] = str(clinic_user.clinic.name)
+    request.session['is_clinic_admin'] = str(clinic_user.role)
+    # request.session['user_active_clinics'] = user_active_clinics
 
-#     # Serialize ClinicUserRole into session
-#     from apps.clinic.models import ClinicUserRole
-#     request.session['clinic_user_roles'] = {
-#         'DOCTOR': ClinicUserRole.DOCTOR,
-#         'STAFF': ClinicUserRole.STAFF,
-#         'VISITING_DOCTOR': ClinicUserRole.VISITING_DOCTOR,
-#     }
+    # Serialize ClinicUserRole into session
+    from apps.clinic.models import ClinicUserRole
+    request.session['clinic_user_roles'] = {
+        # 'DOCTOR': ClinicUserRole.DOCTOR,
+        'STAFF': ClinicUserRole.STAFF,
+        'ADMIN': ClinicUserRole.ADMIN
+        # 'VISITING_DOCTOR': ClinicUserRole.VISITING_DOCTOR,
+    }

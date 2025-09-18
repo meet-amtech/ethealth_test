@@ -1,0 +1,173 @@
+{% extends "setting/settings_base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block content %}
+
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <form method="POST" action="{% url 'template_clinic:clinic_details' %}">
+            {% csrf_token %}
+            <h3 class="page-title">Clinic Details</h3>
+            
+            <!-- Basic Information -->
+            <div class="card-box">
+                <h4 class="card-title">Basic Information</h4>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label>Clinic Name <span class="text-danger">*</span></label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger">{{ form.name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label>Phone Number <span class="text-danger">*</span></label>
+                            {{ form.phone_number }}
+                            {% if form.phone_number.errors %}
+                                <div class="text-danger">{{ form.phone_number.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label>Email Address</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger">{{ form.email.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label>Website</label>
+                            {{ form.website }}
+                            {% if form.website.errors %}
+                                <div class="text-danger">{{ form.website.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address Information -->
+            <div class="card-box">
+                <h4 class="card-title">Address Information</h4>
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="form-group">
+                            <label>Street Address</label>
+                            {{ form.address_line1 }}
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6 col-md-6 col-lg-3">
+                        <div class="form-group">
+                            <label>Country</label>
+                            {{ form.address_country }}
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-6 col-lg-3">
+                        <div class="form-group">
+                            <label>City</label>
+                            {{ form.address_city }}
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-6 col-lg-3">
+                        <div class="form-group">
+                            <label>State/Province</label>
+                            {{ form.address_state }}
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-6 col-lg-3">
+                        <div class="form-group">
+                            <label>Postal Code</label>
+                            {{ form.address_postal_code }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API & Settings -->
+            <div class="card-box">
+                <h4 class="card-title">API & Settings</h4>
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="form-group">
+                            <label>API Key (Read-only)</label>
+                            {{ form.api_key }}
+                            {% if form.api_key.errors %}
+                                <div class="text-danger">{{ form.api_key.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label class="gen-label">Reset Token</label>
+                            <div class="checkbox">
+                                <label class="form-check-label">
+                                    {{ form.reset_token }} Reset Token
+                                </label>
+                            </div>
+                            {% if form.reset_token.errors %}
+                                <div class="text-danger">{{ form.reset_token.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save Button -->
+            <div class="row">
+                <div class="col-sm-12 text-center m-t-20">
+                    <button id="save-clinic-details" type="submit" class="btn btn-primary submit-btn">Save Changes</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+<style>
+    .card-box {
+        margin-bottom: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.05);
+        padding: 20px;
+        background: #fff;
+    }
+    .card-title {
+        color: #333;
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #009efb;
+        padding-bottom: 10px;
+    }
+</style>
+
+<script>
+    // Function to focus the button and add an event listener for the Enter key
+    window.onload = function() {
+        const button = document.getElementById('save-clinic-details');
+        button.focus(); // Focus the button
+        // Add an event listener for the Enter key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                button.click(); // Trigger the button click
+            }
+        });
+    };
+</script>
+
+{% endblock %}

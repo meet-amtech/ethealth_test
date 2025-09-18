@@ -17,26 +17,25 @@ logger = logging.getLogger(__name__)
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, phone, password=None, **extra_fields):
-        if not phone:
+    def create_user(self, phone_number, password=None, **extra_fields):
+        if not phone_number:
             raise ValueError("The Phone number must be provided")
-        user = self.model(phone=phone, **extra_fields)
+        user = self.model(phone_number=phone_number, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, phone, password=None, **extra_fields):
+    def create_superuser(self, phone_number, password=None, **extra_fields):
         extra_fields.setdefault('is_superuser', True)
-        return self.create_user(phone, password, **extra_fields)
+        return self.create_user(phone_number, password, **extra_fields)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    phone = models.CharField(max_length=10, unique=True, validators=[RegexValidator(
+    phone_number = models.CharField(max_length=10, unique=True, validators=[RegexValidator(
         regex=r"^\d{10}", message="Phone number must be 10 digits only.")])
     is_active = models.BooleanField(default=True)
-    # is_staff = models.BooleanField(default=False)
 
-    USERNAME_FIELD = 'phone'
+    USERNAME_FIELD = 'phone_number'
     REQUIRED_FIELDS = []
 
     objects = UserManager()
@@ -49,7 +48,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.phone}"
+        return f"{self.phone_number}"
         
     @property
     def is_staff(self):

@@ -15,7 +15,6 @@
     <div class="header-left">
         <button id="api-call-button" style="background: none; border: none; outline: none;">
             <a class="logo">
-                <img src="{{ request.session.clinic_logo_url }}" width="35" height="35" alt="">
                 <span>{{ request.session.clinic_name }}</span>
             </a>
         </button>
@@ -86,14 +85,13 @@
         <li class="nav-item dropdown has-arrow">
             <a href="#" class="dropdown-toggle nav-link user-link" data-toggle="dropdown">
                 <span class="user-img">
-                    <img class="rounded-circle" src="{{ request.user.avatar.url }}" width="40" alt="">
                     <span class="status online"></span>
                 </span>
-                <span>{{ request.user.name }}</span>
+                <span>{{ request.session.clinic_user_name }}</span>
             </a>
             <div class="dropdown-menu">
-                <a class="dropdown-item" href="{% url 'template_doctor:doctor_detail' request.session.clinic_user_id %}">My Profile</a>
-                <a class="dropdown-item" href="{% url 'template_clinic:settings' %}">Settings</a>
+                <a class="dropdown-item" href="{% url 'template_user:user_profile' %}">My Profile</a>
+                <a class="dropdown-item" href="{% url 'template_clinic:clinic_details' %}">Clinic Settings</a>
                 <a class="dropdown-item" href="{% url 'template_user:logout' %}">Logout</a>
             </div>
         </li>
@@ -103,8 +101,8 @@
             <i class="fa fa-ellipsis-v"></i>
         </a>
         <div class="dropdown-menu dropdown-menu-right">
-            <a class="dropdown-item" href="{% url 'template_doctor:doctor_detail' request.session.clinic_user_id %}">My Profile</a>
-            <a class="dropdown-item" href="{% url 'template_clinic:settings' %}">Settings</a>
+            <a class="dropdown-item" href="{% url 'template_user:user_profile' %}">My Profile</a>
+            <a class="dropdown-item" href="{% url 'template_clinic:clinic_details' %}">Clinic Settings</a>
             <a class="dropdown-item" href="{% url 'template_user:logout' %}">Logout</a>
         </div>
     </div>

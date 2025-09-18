@@ -12,7 +12,7 @@
 </div>
 {% endfor %}
 
-<form action="{% url 'template_user:verify_otp' %}" method="POST" class="form-signin">
+<form action="{% url 'template_user:otp_verify' %}" method="POST" class="form-signin">
     {% csrf_token %}
     <div class="text-center mb-4">
         <h2 class="welcome-text">Welcome Back!</h2>

@@ -17,7 +17,17 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
+from apps.base.views import DashboardView
+
 urlpatterns = [
-    path('', admin.site.urls),
-    path("user/", include("apps.users.urls", namespace="template_user"), name='users')
+    path("", DashboardView.as_view(), name="dashboard"),
+    path("user/", include("apps.users.urls.template_urls", namespace="template_user"), name='users'),
+    path("clinics/", include("apps.clinic.urls.template_urls", namespace="template_clinic"), name='clinics'),
+    path("doctors/", include("apps.clinic.urls.doctor_urls", namespace="doctor_availability"), name='doctors')
+]
+
+
+# admin sites
+urlpatterns += [
+    path('admin/', admin.site.urls)
 ]
