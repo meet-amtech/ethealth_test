@@ -44,7 +44,8 @@ LIBRARY_APPS = [
 PROJECT_APPS = [
     'apps.users',
     'apps.base',
-    'apps.clinic'
+    'apps.clinic',
+    'apps.appointment'
 ]
 
 INSTALLED_APPS = DJANGO_APPS + LIBRARY_APPS + PROJECT_APPS
@@ -242,7 +243,7 @@ OTP_TIMEOUT_MINUTES = int(os.environ.get('OTP_TIMEOUT_MINUTES', 10))
 
 DEFAULT_PASSWORD = os.getenv("DEFAULT_PASSWORD", default="1234")
 
-# LOGIN_URL = '/user/login/'
+LOGIN_URL = '/user/login/'
 
 # MEDIA_URL = '/media/'
 # MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

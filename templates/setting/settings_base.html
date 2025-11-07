@@ -40,7 +40,7 @@
                             <a href="{% url 'template_clinic:clinic_details' %}"><i class="fa fa-building"></i> <span>Clinic Settings</span></a>
                         </li>
                         <li class="{% if 'clinics/opening-hours' in request.get_full_path %} active {% endif %}">
-                            <a href=""><i class="fa fa-clock-o"></i> <span>Opening Hours</span></a>
+                            <a href="{% url 'template_clinic:opening_hour_list' %}"><i class="fa fa-clock-o"></i> <span>Opening Hours</span></a>
                         </li>
                         {% if request.session.is_clinic_admin %}
                         {% endif %}

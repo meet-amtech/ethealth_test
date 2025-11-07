@@ -1,5 +1,6 @@
 from django import forms
 from .models import Clinic, DoctorAvailability, WeekDay
+from .models import WeekDay
 
 
 class ClinicDetailsForm(forms.ModelForm):
@@ -95,19 +96,28 @@ class ClinicDetailsForm(forms.ModelForm):
         # Add any custom validation here
         return cleaned_data
 
-
-class DoctorAvailabilityForm(forms.ModelForm):
-    """Form for managing doctor availability"""
-    class Meta:
-        model = DoctorAvailability
-        fields = ['weekday', 'start_time', 'end_time', 'break_start', 'break_end']
-        widgets = {
-            'weekday': forms.Select(attrs={'class': 'form-control'}),
-            'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-            'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-            'break_start': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-            'break_end': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-        }
+class OpeningHourForm(forms.Form):
+    start_time = forms.TimeField(
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+        required=True
+    )
+    end_time = forms.TimeField(
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+        required=True
+    )
+    break_start = forms.TimeField(
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+        required=False
+    )
+    break_end = forms.TimeField(
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+        required=False
+    )
+    selected_days = forms.MultipleChoiceField(
+        choices=WeekDay.choices,
+        widget=forms.SelectMultiple(attrs={'class': 'form-control'}),
+        required=True
+    )
 
     def clean(self):
         cleaned_data = super().clean()
@@ -116,17 +126,14 @@ class DoctorAvailabilityForm(forms.ModelForm):
         break_start = cleaned_data.get('break_start')
         break_end = cleaned_data.get('break_end')
 
-        if start_time and end_time and end_time <= start_time:
-            raise forms.ValidationError('End time must be after start time')
+        if start_time and end_time and start_time >= end_time:
+            raise forms.ValidationError("End time must be after start time.")
+
+        if (break_start and not break_end) or (not break_start and break_end):
+            raise forms.ValidationError("Please provide both break start and end times or leave both empty.")
 
         if break_start and break_end:
-            if break_end <= break_start:
-                raise forms.ValidationError('Break end time must be after break start time')
-            if start_time and break_start < start_time:
-                raise forms.ValidationError('Break time must be within working hours')
-            if end_time and break_end > end_time:
-                raise forms.ValidationError('Break time must be within working hours')
-        elif break_start or break_end:
-            raise forms.ValidationError('Both break start and end times must be provided')
+            if not (start_time <= break_start <= break_end <= end_time):
+                raise forms.ValidationError("Break time must be within working hours.")
 
         return cleaned_data

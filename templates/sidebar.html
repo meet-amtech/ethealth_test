@@ -13,14 +13,11 @@
                 <li>
                     <a href="{% url 'template_user:user_profile' %}"><i class="fa fa-user"></i> <span>Personal Info</span></a>
                 </li>
-                <li>
-                    <a href="#"><i class="fa fa-calendar"></i> <span>Appointments</span></a>
+                <li class="{% if 'appointments' in request.path %} active {% endif %}">
+                    <a href="{% url 'template_appointment:appointment_list' %}"><i class="fa fa-calendar"></i> <span>Appointments</span></a>
                 </li>
                 <li>
                     <a href="#"><i class="fa fa-user-md"></i> <span>Doctors</span></a>
-                </li>
-                <li class="{% if 'doctor-availability' in request.path %}active{% endif %}">
-                    <a href="{% url 'doctor_availability:doctor_schedule' %}"><i class="fa fa-calendar-check-o"></i> <span>Doctor Schedule</span></a>
                 </li>
                 <li>
                     <a href="#"><i class="fa fa-cog"></i> <span>Settings</span></a>

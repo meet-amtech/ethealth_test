@@ -92,7 +92,7 @@ class OTPVerifyView(View):
             messages.error(request=request, message='No user found with given mobile number.')
             return redirect(reverse_lazy('template_user:login'))
 
-        clinic_user_instance = ClinicUser.objects.filter(user=user_instance)
+        clinic_user_instance = ClinicUser.objects.filter(user=user_instance).first()
         if not clinic_user_instance:
             logger.debug(f"Mobile({phone}) is not clinic_user.")
             messages.error(request=request, message='Not allowed to login.')
@@ -131,15 +131,15 @@ class OTPVerifyView(View):
             # if not clinic_user:
             #     # Check if user is visitor doctor
             #     clinic_user = ClinicUser.get_active_clinic_users(user_id=user_id, role=ClinicUserRole.VISITING_DOCTOR.value).first()
-            if not clinic_user:
-                # check if user is admin member at any club
-                clinic_user = ClinicUser.get_active_clinic_users(user_id=user_id, role=ClinicUserRole.ADMIN.value).first()
+            # if not clinic_user:
+            #     # check if user is admin member at any club
+            #     clinic_user = ClinicUser.get_active_clinic_users(user_id=user_id, role=ClinicUserRole.ADMIN.value).first()
             if not clinic_user:
                 # check if user is staff member at any club
-                clinic_user = ClinicUser.get_active_clinic_users(user_id=user_id, role=ClinicUserRole.STAFF.value).first()
+                clinic_user = ClinicUser.get_active_clinic_users(clinic_id=clinic_user_instance.clinic_id,user_id=user_id, role=ClinicUserRole.STAFF.value).first()
 
             if not clinic_user:
-                raise Exception("This user is not associated with any clinic.")
+                raise Exception(f"This user: {user_instance.phone_number} is not associated with any clinic.")
 
             set_request_session_values(request=request, clinic_id=clinic_user.clinic.id)
             return redirect(redirect_url)
@@ -182,7 +182,6 @@ class UserProfileView(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         user = request.user
-        print(f"************* user: {user} ****************")
         try:
             clinic_user = ClinicUser.objects.get(
                 user=user,

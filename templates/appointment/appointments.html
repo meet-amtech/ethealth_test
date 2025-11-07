@@ -19,14 +19,13 @@
 </div>
 <!-- Filters -->
 <div class="row filter-row">
-    <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12"></div>
-    <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12"></div>
     <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12">
         <div class="form-group form-focus">
-            <label class="focus-label">Patient Name</label>
-            <input type="text" id="patient_name" class="form-control floating" value="{{filters.patient_name|default:''}}">
+            <label class="focus-label">Search</label>
+            <input type="text" id="search" class="form-control floating" value="{{search_query|default:''}}" placeholder="Name, Phone, Token...">
         </div>
     </div>
+    <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12"></div>
     <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12">
         <div class="form-group form-focus">
             <label class="focus-label">From</label>
@@ -71,7 +70,7 @@
             function validateAndFilter() {
               const startDate = document.getElementById('start_date').value;
               const endDate = document.getElementById('end_date').value;
-              const patientName = document.getElementById('patient_name').value;
+              const search = document.getElementById('search').value;
 
               if (!startDate || !endDate) {
                 alert('Please select both start and end dates');
@@ -83,8 +82,8 @@
                 return;
               }
 
-              const baseUrl = "{% url 'template_appointment:appointments_list' %}";
-              window.location.href = `${baseUrl}?start_date=${startDate}&end_date=${endDate}&patient_name=${patientName}`;
+              const baseUrl = "{% url 'template_appointment:appointment_list' %}";
+              window.location.href = `${baseUrl}?start_date=${startDate}&end_date=${endDate}&search=${search}`;
             }
 
             // Prefill the input fields with values from the URL query parameters
@@ -121,62 +120,65 @@
             <table class="table table-striped custom-table datatable">
                 <thead>
                     <tr>
-                        <th>Token</th>
                         <th>Patient Name</th>
+                        <th>Phone Number</th>
+                        <th>Token No.</th>
                         <th>Age</th>
                         <th>Doctor Name</th>
                         <th>Appointment Date</th>
                         <th>Appointment Time</th>
-                        <th>Height</th>
-                        <th>Weight</th>
+                        <th>Duration</th>
+                        <th>Amount</th>
                         <th>Status</th>
                         <th class="text-right">Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for appointment_request in appointment_requests %}
+                    {% for appointment in appointments %}
                         <tr>
-                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment_request.id %}';">{{ appointment_request.request_token }}</td>
-                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment_request.id %}';">
+                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">
                                 <img width="28" height="28" src="
-                                    {% if appointment_request.appointment %}
-                                        {{ appointment_request.appointment.clinic_patient.patient.user.avatar.url }}
+                                    {% if appointment.clinic_patient.patient.user and appointment.clinic_patient.patient.user.avatar %}
+                                        {{ appointment.clinic_patient.patient.user.avatar.url }}
                                     {% else %}
                                         {% static 'assets/img/user.jpg' %}
-                                    {% endif%}" class="rounded-circle m-r-5" alt="">
-                                {{ appointment_request.name }}
+                                    {% endif %}" class="rounded-circle m-r-5" alt="">
+                                {{ appointment.clinic_patient.patient.name }}
                             </td>
-                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment_request.id %}';">{% if appointment_request.age %} {{ appointment_request.age }} {% else %} - {% endif %}</td>
-                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment_request.id %}';">{% if appointment_request.clinic_user.user.name %} {{ appointment_request.clinic_user.user.name }} {% else %} - {% endif %}</td>
-                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment_request.id %}';">{% if appointment_request.date_str %} {{ appointment_request.date_str }} {% else %} - {% endif %}</td>
-                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment_request.id %}';">{% if appointment_request.start_time_str %} {{ appointment_request.start_time_str }} {% endif %} - {% if appointment_request.end_time_str %} {{ appointment_request.end_time_str }} {% endif %}</td>
-                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment_request.id %}';">{% if appointment_request.appointment.height %} {{ appointment_request.appointment.height }} ft {% else %} - {% endif %}</td>
-                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment_request.id %}';">{% if appointment_request.appointment.weight %} {{ appointment_request.appointment.weight }} kg {% else %} - {% endif %}</td>
-                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment_request.id %}';">
-                                {% if appointment_request.appointment %}
-                                    <span class="custom-badge status-green">
-                                        {{ appointment_request.appointment.appointment_status }}
-                                    </span>
+                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">{% if appointment.phone_number %}{{ appointment.phone_number }}{% else %}-{% endif %}</td>
+                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">{% if appointment.token_number %}#{{ appointment.token_number }}{% else %}-{% endif %}</td>
+                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">{% if appointment.clinic_patient.patient.age %} {{ appointment.clinic_patient.patient.age }} {% else %} - {% endif %}</td>
+                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">{% if appointment.doctor %} {{ appointment.doctor.name }} {% else %} - {% endif %}</td>
+                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">{% if appointment.date_str %} {{ appointment.date_str }} {% else %} - {% endif %}</td>
+                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">{% if appointment.time_str %} {{ appointment.time_str }} {% else %} - {% endif %}</td>
+                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">{{ appointment.duration_minutes }} min</td>
+                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">{% if appointment.amount_to_pay %}₹{{ appointment.amount_to_pay }}{% else %}-{% endif %}</td>
+                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">
+                                {% if appointment.appointment_status == 'completed' %}
+                                    <span class="custom-badge status-green">{{ appointment.get_appointment_status_display }}</span>
+                                {% elif appointment.appointment_status == 'in_progress' %}
+                                    <span class="custom-badge status-blue">{{ appointment.get_appointment_status_display }}</span>
+                                {% elif appointment.appointment_status == 'cancelled' %}
+                                    <span class="custom-badge status-red">{{ appointment.get_appointment_status_display }}</span>
                                 {% else %}
-                                    <span class="custom-badge status-red">
-                                        {{ appointment_request.appointment_request_status }}
-                                    </span>
+                                    <span class="custom-badge status-orange">{{ appointment.get_appointment_status_display }}</span>
                                 {% endif %}
                             </td>
                             <td class="text-right">
                                 <div class="dropdown dropdown-action">
                                     <a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i class="fa fa-ellipsis-v"></i></a>
                                     <div class="dropdown-menu dropdown-menu-right">
-                                        {% if request.user == appointment_request.clinic_user.user %}
-                                        <a class="dropdown-item" href="{% url 'template_appointment:appointment_update' appointment_request.id %}">
+                                        <a class="dropdown-item" href="{% url 'template_appointment:appointment_update' appointment.id %}">
                                             <i class="fa fa-pencil m-r-5"></i>
                                             Edit
                                         </a>
-                                        {% endif %}
-                                        <a class="dropdown-item delete-appointment-link" href="#" data-url="{% url 'template_appointment:appointment_delete' appointment_request.id %}" data-toggle="modal" data-target="#delete_appointment">
-                                            <i class="fa fa-trash-o m-r-5"></i>
-                                            Delete
-                                        </a>
+                                        <form method="POST" action="{% url 'template_appointment:appointment_delete' appointment.id %}" style="display:inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item" onclick="return confirm('Are you sure you want to delete this appointment?');">
+                                                <i class="fa fa-trash-o m-r-5"></i>
+                                                Delete
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             </td>

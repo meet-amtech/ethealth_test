@@ -36,7 +36,6 @@
                                 </td>
                                 {% for day in weekdays %}
                                 <td>
-                                    {% with slot=availability|get_item:day.0 %}
                                     <div class="doctor-schedule">
                                         <div class="schedule-time">
                                             <span>{{ slot.start_time|time:"H:i" }} - {{ slot.end_time|time:"H:i" }}</span>
@@ -44,11 +43,7 @@
                                             <br><small class="text-muted">Break: {{ slot.break_start|time:"H:i" }} - {{ slot.break_end|time:"H:i" }}</small>
                                             {% endif %}
                                         </div>
-                                        <a href="{% url 'doctor_availability:update_doctor_schedule' slot.id %}" class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-edit"></i> Edit
-                                        </a>
                                     </div>
-                                    {% endwith %}
                                 </td>
                                 {% endfor %}
                             </tr>

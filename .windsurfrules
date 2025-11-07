@@ -1,0 +1,9 @@
+Use Indian English and examples from Indian context.
+Give short and clear answers — easy to understand.
+Explain only key changes, not every line.
+Skip terminal commands unless asked.
+Follow Django best practices (CBV, DRY, secure env).
+Do not change project folders or add design files.
+Keep replies focused on logic, not UI or styling.
+If unsure, ask before making big changes.
+The main goal of this project is not UI design — we use Django templates for simplicity. Do NOT add or create extra CSS, JS, or other design-related files. Use existing static files only.

@@ -1,0 +1,65 @@
+,
+eth_appointment_request,
+id,uuid
+created_at,timestamp with time zone
+updated_at,timestamp with time zone
+is_active,boolean
+is_deleted,boolean
+name,character varying
+phone,character varying
+request_token,integer
+appointment_request_status,"Choice (pending, confirmed, cancelled)"
+clinic_id,fk to clinic
+created_by_id,bigint
+updated_by_id,bigint
+source,text
+age,interger
+confirmed_at,datetime
+gender,"male, female, other"
+expired_at,datetime
+,
+eth_appointment,
+id,uuid
+created_at,timestamp with time zone
+updated_at,timestamp with time zone
+is_active,boolean
+is_deleted,boolean
+paid,boolean
+amount_to_pay,numeric
+appointment_status,"Choice( scheduled, in_progress, completed, cancelled)"
+clinic_patient_id,uuid
+created_by_id,bigint
+updated_by_id,bigint
+appointment_request_id,fk to AppointmentRequest
+doctor_id,fk to clinicUser type of doctor
+appointment_date,date 
+appointment_time,time
+duration_minutes,int
+feedback,text
+notes,text
+,
+,
+eth_patient,
+id,uuid
+created_at,timestamp with time zone
+updated_at,timestamp with time zone
+is_active,boolean
+is_deleted,boolean
+created_by_id,bigint
+updated_by_id,bigint
+user_id,fk to Etuser
+date_of_birth,date
+name,varchar
+phone,date
+,
+,
+eth_clinic_patient,
+id,uuid
+created_at,timestamp with time zone
+updated_at,timestamp with time zone
+is_active,boolean
+is_deleted,boolean
+clinic_id,fk to Clinc
+created_by_id,bigint
+updated_by_id,bigint
+patient_id,fk to patient

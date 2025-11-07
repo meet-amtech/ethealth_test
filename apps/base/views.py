@@ -1,10 +1,12 @@
 
 from django.shortcuts import render
 from django.views.generic import TemplateView
+from django.contrib.auth.mixins import LoginRequiredMixin
+
 
 from apps.base.permissions import ETHealthBasePermission
 
-class DashboardView(TemplateView):
+class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = "dashboard.html"
     permission_required = [ETHealthBasePermission]
 

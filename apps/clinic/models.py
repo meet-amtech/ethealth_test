@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.db.models import Q
 
 from apps.base.helpers import EncryptionDecryption
 from apps.base.models import Base
@@ -72,8 +73,6 @@ class Clinic(Base):
             if not clinic_user:
                 clinic_user = ClinicUser.get_active_clinic_users(clinic_id=clinic_id, role=ClinicUserRole.DOCTOR).first()
             if not clinic_user:
-                clinic_user = ClinicUser.get_active_clinic_users(clinic_id=clinic_id, role=ClinicUserRole.VISITING_DOCTOR).first()
-            if not clinic_user:
                 raise Exception("No Doctor available.")
             return clinic_user
         except ClinicUser.DoesNotExist:
@@ -139,7 +138,7 @@ class DoctorAvailability(Base):
         'ClinicUser',
         on_delete=models.CASCADE,
         related_name='availability_slots',
-        limit_choices_to={'role': ClinicUserRole.DOCTOR}
+        limit_choices_to={'role__in': [ClinicUserRole.DOCTOR, ClinicUserRole.ADMIN]}
     )
     clinic = models.ForeignKey(
         'Clinic',
@@ -168,7 +167,13 @@ class DoctorAvailability(Base):
         verbose_name = "Doctor Availability"
         verbose_name_plural = "Doctor Availabilities"
         ordering = ['doctor', 'weekday', 'start_time']
-        unique_together = ['doctor', 'clinic', 'weekday']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['doctor', 'clinic', 'weekday'],
+                condition=Q(is_deleted=False),
+                name='unique_active_doctor_availability'
+            )
+        ]
         db_table = 'eth_doctor_availability'
 
     def __str__(self):
@@ -225,22 +230,34 @@ class DoctorAvailability(Base):
                 
     #     return True
 
-    # @classmethod
-    # def get_available_slots(cls, doctor_id, clinic_id, date):
+    @classmethod
+    def get_available_slots(cls, doctor_id, clinic_id, date):
         """
         Get available time slots for a doctor on a specific date
         
         Args:
             doctor_id: ID of the doctor
             clinic_id: ID of the clinic
-            date: Date to check availability for
+            date: Date to check availability for (can be date object or string in YYYY-MM-DD format)
             
         Returns:
             list: List of available time slots as (start_time, end_time) tuples
         """
-        from datetime import timedelta
+        from datetime import datetime, timedelta, date as date_type
         
-        weekday = date.strftime('%A').lower()
+        # Convert string date to date object if needed
+        if isinstance(date, str):
+            try:
+                date_obj = datetime.strptime(date, '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                raise ValueError("Date must be a date object or string in YYYY-MM-DD format")
+        elif isinstance(date, date_type):
+            date_obj = date
+        else:
+            raise ValueError("Date must be a date object or string in YYYY-MM-DD format")
+            
+        # Get the weekday name in lowercase (e.g., 'monday', 'tuesday')
+        weekday = date_obj.strftime('%A').lower()
         availability = cls.objects.filter(
             doctor_id=doctor_id,
             clinic_id=clinic_id,
@@ -252,8 +269,8 @@ class DoctorAvailability(Base):
             
         # Generate time slots (e.g., 30-minute slots)
         slot_duration = timedelta(minutes=30)
-        current_time = datetime.combine(date, availability.start_time)
-        end_time = datetime.combine(date, availability.end_time)
+        current_time = datetime.combine(date_obj, availability.start_time)
+        end_time = datetime.combine(date_obj, availability.end_time)
         
         available_slots = []
         

@@ -2,7 +2,7 @@
 {% load static %}
 {% load custom_filters %}
 
-{% block title %}Add Opening Hours{% endblock %}
+{% block title %}Update Opening Hours{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -10,7 +10,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title">Add Doctor Availability</h4>
+                    <h4 class="card-title">Update Doctor Availability</h4>
                 </div>
                 <div class="card-body">
                     <form method="post" id="opening-hours-form">
@@ -23,24 +23,14 @@
                         {% endif %}
 
                         <div class="form-group">
-                            <label class="d-block mb-2">Select Days</label>
-                            <div class="row">
+                            <label class="d-block mb-2">Select Day</label>
+                            <select name="selected_days" class="form-control" required>
                                 {% for value, label in weekdays %}
-                                    <div class="col-md-4 mb-2">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" 
-                                                   id="day-{{ value }}" name="selected_days" 
-                                                   value="{{ value }}"
-                                                   {% for day in available_days %}
-                                                       {% if day.0 == value %}checked{% endif %}
-                                                   {% endfor %}>
-                                            <label class="form-check-label" for="day-{{ value }}">
-                                                {{ label }}
-                                            </label>
-                                        </div>
-                                    </div>
+                                    <option value="{{ value }}" {% if value == selected_day %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
                                 {% endfor %}
-                            </div>
+                            </select>
                             {% if form.errors.selected_days %}
                                 <div class="invalid-feedback d-block">
                                     {{ form.errors.selected_days }}
@@ -52,7 +42,8 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="{{ form.start_time.id_for_label }}">Start Time</label>
-                                    {{ form.start_time }}
+                                    <input type="time" name="start_time" class="form-control" 
+                                           value="{{ form.start_time.value|default:'' }}" required>
                                     {% if form.start_time.errors %}
                                         <div class="invalid-feedback d-block">
                                             {{ form.start_time.errors }}
@@ -63,7 +54,8 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="{{ form.end_time.id_for_label }}">End Time</label>
-                                    {{ form.end_time }}
+                                    <input type="time" name="end_time" class="form-control" 
+                                           value="{{ form.end_time.value|default:'' }}" required>
                                     {% if form.end_time.errors %}
                                         <div class="invalid-feedback d-block">
                                             {{ form.end_time.errors }}
@@ -80,27 +72,28 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="{{ form.break_start.id_for_label }}">Break Start</label>
-                                    {{ form.break_start }}
+                                    <input type="time" name="break_start" class="form-control" 
+                                           value="{{ form.break_start.value|default:'' }}">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="{{ form.break_end.id_for_label }}">Break End</label>
-                                    {{ form.break_end }}
+                                    <input type="time" name="break_end" class="form-control" 
+                                           value="{{ form.break_end.value|default:'' }}">
                                 </div>
                             </div>
-                            {% if form.non_field_errors %}
-                                <div class="col-12">
-                                    <div class="alert alert-danger">
-                                        {{ form.non_field_errors }}
-                                    </div>
-                                </div>
-                            {% endif %}
                         </div>
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
 
                         <div class="form-group mt-4">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-2"></i>Save Availability
+                                <i class="fas fa-save me-2"></i>Update Availability
                             </button>
                             <a href="{% url 'template_clinic:opening_hour_list' %}" 
                                class="btn btn-secondary">
@@ -119,20 +112,14 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('opening-hours-form');
-    const checkboxes = form.querySelectorAll('input[type="checkbox"][name="selected_days"]');
     const submitBtn = form.querySelector('button[type="submit"]');
 
     // Client-side validation
     form.addEventListener('submit', function(e) {
-        const selectedDays = Array.from(checkboxes).filter(cb => cb.checked);
-        if (selectedDays.length === 0) {
-            e.preventDefault();
-            alert('Please select at least one day');
-            return false;
-        }
-
-        const startTime = form.querySelector('#id_start_time').value;
-        const endTime = form.querySelector('#id_end_time').value;
+        const startTime = form.querySelector('input[name="start_time"]').value;
+        const endTime = form.querySelector('input[name="end_time"]').value;
+        const breakStart = form.querySelector('input[name="break_start"]').value;
+        const breakEnd = form.querySelector('input[name="break_end"]').value;
         
         if (startTime && endTime && startTime >= endTime) {
             e.preventDefault();
@@ -140,9 +127,21 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
 
+        if ((breakStart || breakEnd) && (!breakStart || !breakEnd)) {
+            e.preventDefault();
+            alert('Please provide both break start and end times');
+            return false;
+        }
+
+        if (breakStart && breakEnd && breakStart >= breakEnd) {
+            e.preventDefault();
+            alert('Break end time must be after break start time');
+            return false;
+        }
+
         // Show loading state
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...';
     });
 });
 </script>
