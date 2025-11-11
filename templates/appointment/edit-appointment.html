@@ -1,11 +1,24 @@
 {% extends "base.html" %}
 {% load static %}
+{% load custom_filters %}
 
 {% block css %}
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<!-- DateTime Picker CSS (tempusdominus) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.39.0/css/tempusdominus-bootstrap-4.min.css" />
+<style>
+    .input-group-text {
+        cursor: pointer;
+    }
+    .input-group-text i {
+        pointer-events: none;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-
+    
 <div class="row">
     <div class="col-lg-8 offset-lg-2">
         <h4 class="page-title">Edit Appointment - {{ appointment.clinic_patient.patient.name }}</h4>
@@ -15,14 +28,60 @@
     <div class="col-lg-8 offset-lg-2">
         <form method="POST" action="{% url 'template_appointment:appointment_update' appointment.id %}">
             {% csrf_token %}
+            <!-- Hidden doctor field -->
+            <input type="hidden" name="doctor_id" value="{{ appointment.doctor.id }}">
+            
             <div class="row">
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label>Doctor</label>
-                        <select class="form-control" name="doctor_id">
-                            <option value="">Select Doctor</option>
-                            {% for doctor in doctors %}
-                                <option value="{{ doctor.id }}" {% if appointment.doctor and appointment.doctor.id == doctor.id %}selected{% endif %}>{{ doctor.name }}</option>
+                        <label>Patient Name <span class="text-danger">*</span></label>
+                        <input class="form-control" type="text" name="patient_name" value="{{ appointment.clinic_patient.patient.name }}" required />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Patient Phone Number <span class="text-danger">*</span></label>
+                        <input class="form-control" type="text" name="patient_phone" value="{{ phone_number }}" maxlength="10" pattern="[0-9]{10}" placeholder="10 digit phone number" required />
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Patient Date of Birth <span class="text-danger">*</span></label>
+                        <div class="input-group date" id="patient_dob_picker" data-target-input="nearest">
+                            <input type="text" class="form-control datetimepicker-input" name="patient_dob" 
+                                   value="{{ appointment.clinic_patient.patient.date_of_birth|date:'d/m/Y' }}" 
+                                   data-target="#patient_dob_picker" data-toggle="datetimepicker" 
+                                   placeholder="DD/MM/YYYY" required />
+                            <div class="input-group-append" data-target="#patient_dob_picker" data-toggle="datetimepicker">
+                                <div class="input-group-text"><i class="far fa-calendar-alt"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Patient Age</label>
+                        <input class="form-control" type="number" name="patient_age" 
+                               value="{{ appointment.clinic_patient.patient.age|default:'' }}" 
+                               min="0" max="150" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Patient Gender</label>
+                        <select class="form-control" name="patient_gender">
+                            <option value="">Select Gender</option>
+                            {% for value, label in gender_choices %}
+                                <option value="{{ value }}" {% if appointment.clinic_patient.patient.gender == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
                             {% endfor %}
                         </select>
                     </div>
@@ -32,55 +91,34 @@
                         <label>Status</label>
                         <select class="form-control" name="appointment_status">
                             {% for value, label in status_choices %}
-                                <option value="{{ value }}" {% if appointment.appointment_status == value %}selected{% endif %}>{{ label }}</option>
+                                <option value="{{ value }}" {% if appointment.appointment_status == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
                             {% endfor %}
                         </select>
                     </div>
                 </div>
             </div>
+
             <div class="row">
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label>Patient Name</label>
-                        <input class="form-control" type="text" name="patient_name" value="{{ appointment.clinic_patient.patient.name }}">
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Patient Phone Number</label>
-                        <input class="form-control" type="text" name="patient_phone" value="{{ phone_number }}" maxlength="10" pattern="[0-9]{10}" placeholder="10 digit phone number">
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Patient Age</label>
-                        <input class="form-control" type="number" name="patient_age" value="{{ appointment.clinic_patient.patient.age|default:'' }}" min="0" max="150">
+                        <label>Appointment Date & Time <span class="text-danger">*</span></label>
+                        <div class="input-group date" id="appointment_datetime_picker" data-target-input="nearest">
+                            <input type="text" class="form-control datetimepicker-input" name="appointment_datetime" 
+                                   value="{{ appointment.date_str }} {{ appointment.time_str }}"
+                                   data-toggle="datetimepicker" data-target="#appointment_datetime_picker" 
+                                   required />
+                            <div class="input-group-append" data-target="#appointment_datetime_picker" data-toggle="datetimepicker">
+                                <div class="input-group-text"><i class="far fa-calendar-alt"></i></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
                         <label>Token Number</label>
                         <input class="form-control" type="text" value="{% if token_number %}#{{ token_number }}{% else %}-{% endif %}" readonly>
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Appointment Date</label>
-                        <div class="cal-icon">
-                            <input type="text" class="form-control datetimepicker" name="appointment_date" value="{{ appointment.date_str }}">
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Appointment Time</label>
-                        <div class="time-icon">
-                            <input type="text" class="form-control" id="datetimepicker3" name="appointment_time" value="{{ appointment.time_str }}">
-                        </div>
                     </div>
                 </div>
             </div>
@@ -143,29 +181,98 @@
 
 {% block script %}
 
-<script>
+<!-- DateTime Picker JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.39.0/js/tempusdominus-bootstrap-4.min.js"></script>
 
-    $(function () {
-        $('#datetimepicker3').datetimepicker({
-            format: 'LT'
-        });
-        $('.datetimepicker').datetimepicker({
-            format: 'DD/MM/YYYY'
-        });
+<script>
+  $(function() {
+    // Enable tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+
+    // current moment
+    var now = moment();
+
+    /* ---------- Appointment picker ---------- */
+    $('#appointment_datetime_picker').datetimepicker({
+      defaultDate: now,
+      format: 'DD/MM/YYYY hh:mm A',
+      stepping: 15,
+      sideBySide: true,
+      useCurrent: true,         // auto-fill with current date/time
+      ignoreReadonly: true,
+      allowInputToggle: true,
+      buttons: {
+        showToday: true,
+        showClear: true,
+        showClose: true
+      },
+      icons: {
+        time: 'far fa-clock',
+        date: 'far fa-calendar',
+        up: 'fas fa-arrow-up',
+        down: 'fas fa-arrow-down',
+        previous: 'fas fa-chevron-left',
+        next: 'fas fa-chevron-right',
+        today: 'far fa-calendar-check',
+        clear: 'far fa-trash-alt',
+        close: 'far fa-times-circle'
+      },
+      minDate: moment().startOf('day'),
+      maxDate: moment().add(3, 'months').endOf('day'),
+      daysOfWeekDisabled: [0] // Disable Sundays
     });
 
-    // Function to focus the button and add an event listener for the Enter key
-    window.onload = function() {
-        const button = document.getElementById('create-appointment');
-        button.focus(); // Focus the button
-        // Add an event listener for the Enter key
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter') {
-                button.click(); // Trigger the button click
-            }
-        });
-    };
+    /* ---------- Patient DOB picker (date-only) ---------- */
+    $('#patient_dob_picker').datetimepicker({
+      format: 'DD/MM/YYYY',
+      useCurrent: false,        // don't prefill with today
+      maxDate: moment(),        // no future DOB
+      ignoreReadonly: true,
+      allowInputToggle: true,
+      icons: {
+        time: 'far fa-clock',
+        date: 'far fa-calendar',
+        up: 'fas fa-arrow-up',
+        down: 'fas fa-arrow-down',
+        previous: 'fas fa-chevron-left',
+        next: 'fas fa-chevron-right',
+        today: 'far fa-calendar-check',
+        clear: 'far fa-trash-alt',
+        close: 'far fa-times-circle'
+      }
+    });
 
+    // When DOB changes, calculate age in years and set patient_age
+    $('#patient_dob_picker').on('change.datetimepicker', function(e) {
+      if (e.date) {
+        var birthDate = e.date; // moment object
+        var age = moment().diff(birthDate, 'years'); // years
+        $('input[name="patient_age"]').val(age);
+      } else {
+        // if cleared, clear age too
+        $('input[name="patient_age"]').val('');
+      }
+    });
+
+    // Focus the save button on page load
+    window.onload = function() {
+      const button = document.getElementById('save-appointment');
+      if (button) {
+        button.focus();
+      }
+      
+      // Add Enter key handler
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault();
+          if (button) {
+            button.click();
+          }
+        }
+      });
+    };
+  });
 </script>
 
 {% endblock %}

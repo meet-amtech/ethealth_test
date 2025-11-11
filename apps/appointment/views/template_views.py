@@ -200,18 +200,18 @@ class AppointmentCreateView(LoginRequiredMixin, View):
                 return redirect('dashboard')
 
             # Get doctors for this clinic
-            doctors = ClinicUser.objects.filter(
+            doctor = ClinicUser.objects.filter(
                 clinic_id=clinic_id,
                 role__in=[ClinicUserRole.DOCTOR, ClinicUserRole.ADMIN],
                 is_active=True,
                 is_deleted=False
-            )
+            ).first()
 
             # Get clinic
             clinic = get_object_or_404(Clinic, id=clinic_id)
 
             context = {
-                'doctors': doctors,
+                'doctor': doctor,
                 'clinic': clinic,
                 'gender_choices': Gender.choices,
             }
@@ -234,36 +234,62 @@ class AppointmentCreateView(LoginRequiredMixin, View):
             patient_age = request.POST.get('patient_age', '').strip()
             patient_gender = request.POST.get('patient_gender', '')
             patient_phone = request.POST.get('patient_phone', '')
+            patient_dob_str = request.POST.get('patient_dob', '').strip()
             doctor_id = request.POST.get('doctor_id')
-            appointment_date_str = request.POST.get('appointment_date')
-            appointment_time_str = request.POST.get('appointment_time')
+            appointment_datetime_str = request.POST.get('appointment_datetime')
             duration = request.POST.get('duration_minutes', '30')
             amount = request.POST.get('amount_to_pay', '').strip()
             notes = request.POST.get('notes', '').strip()
 
             # Validate required fields
-            if not all([patient_name, appointment_date_str, appointment_time_str]):
-                messages.error(request, "Patient name, date, and time are required.")
+            if not all([patient_name, appointment_datetime_str]):
+                messages.error(request, "Patient name and appointment date & time are required.")
                 return redirect('template_appointment:appointment_create')
 
-            # Parse date and time
+            # Enforce phone number required
+            if not patient_phone:
+                messages.error(request, "Patient phone number is required.")
+                return redirect('template_appointment:appointment_create')
+
+            # Parse datetime
             try:
-                appointment_date = get_date_obj(appointment_date_str)
-                appointment_time = get_time_obj(appointment_time_str)
-            except Exception as e:
-                logger.error(f"Error parsing date/time: {str(e)}")
-                messages.error(request, "Invalid date or time format. Use DD/MM/YYYY for date and HH:MM AM/PM for time.")
-                return redirect('template_appointment:appointment_create')
-
-            # Validate date is not in the past
-            if appointment_date < get_today_date_obj().date():
-                messages.error(request, "Appointment date cannot be in the past.")
+                # Format: DD/MM/YYYY hh:mm A (e.g., 11/11/2025 02:30 PM)
+                appointment_datetime = datetime.datetime.strptime(
+                    appointment_datetime_str, 
+                    '%d/%m/%Y %I:%M %p'
+                )
+                
+                # Validate datetime is not in the past
+                # Make both datetimes timezone-aware for comparison
+                from django.utils import timezone
+                current_time = timezone.now()
+                appointment_datetime = timezone.make_aware(appointment_datetime)
+                
+                if appointment_datetime < current_time:
+                    messages.error(request, "Appointment date and time cannot be in the past.")
+                    return redirect('template_appointment:appointment_create')
+                    
+                # Split into date and time for the model
+                appointment_date = appointment_datetime.date()
+                appointment_time = appointment_datetime.time()
+                
+            except ValueError as e:
+                logger.error(f"Error parsing datetime: {str(e)}")
+                messages.error(request, "Invalid datetime format. Please use the datetime picker.")
                 return redirect('template_appointment:appointment_create')
 
             # Get or create patient and clinic_patient
             with transaction.atomic():
                 # Get clinic
                 clinic = get_object_or_404(Clinic, id=clinic_id, is_deleted=False)
+
+                # Parse patient date of birth if provided
+                patient_dob = None
+                if patient_dob_str:
+                    try:
+                        patient_dob = get_date_obj(patient_dob_str)
+                    except Exception:
+                        messages.warning(request, "Invalid date of birth format. Use DD/MM/YYYY. Skipping DOB.")
 
                 # Handle User creation/linking if phone number is provided
                 user_obj = None
@@ -274,28 +300,39 @@ class AppointmentCreateView(LoginRequiredMixin, View):
                         defaults={'is_active': True}
                     )
 
-                # Get or create patient
+                # Get or create patient (prefer by phone if provided)
                 patient = None
-                if user_obj:
-                    # Try to find existing patient linked to this user
-                    patient = Patient.objects.filter(user=user_obj, is_deleted=False).first()
-                
+                if patient_phone:
+                    patient = Patient.objects.filter(phone_number=patient_phone, is_deleted=False).first()
                 if not patient:
-                    # Create new patient or find by name if no user
-                    patient = Patient.objects.create(
-                        user=user_obj,
+                    patient, created = Patient.objects.get_or_create(
                         name=patient_name,
-                        age=int(patient_age) if patient_age else None,
-                        created_by=request.user,
-                        updated_by=request.user
+                        defaults={
+                            'age': int(patient_age) if patient_age else None,
+                            'date_of_birth': patient_dob if patient_dob else None,
+                            'phone_number': patient_phone,
+                            'created_by': request.user,
+                            'updated_by': request.user
+                        }
                     )
                 else:
-                    # Update existing patient details
-                    patient.name = patient_name
+                    created = False
+
+                # Update patient fields if provided and patient already exists
+                if not created:
+                    changed = False
                     if patient_age:
                         patient.age = int(patient_age)
-                    patient.updated_by = request.user
-                    patient.save()
+                        changed = True
+                    if patient_dob:
+                        patient.date_of_birth = patient_dob
+                        changed = True
+                    if patient_phone and patient.phone_number != patient_phone:
+                        patient.phone_number = patient_phone
+                        changed = True
+                    if changed:
+                        patient.updated_by = request.user
+                        patient.save()
 
                 # Get or create clinic_patient
                 clinic_patient, created = ClinicPatient.objects.get_or_create(
@@ -390,10 +427,8 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
             appointment.date_str = get_date_str(appointment.appointment_date)
             appointment.time_str = get_time_str(appointment.appointment_time)
             
-            # Get phone number from patient's user
-            phone_number = ''
-            if appointment.clinic_patient.patient.user:
-                phone_number = appointment.clinic_patient.patient.user.phone_number
+            # Get phone number from patient
+            phone_number = appointment.clinic_patient.patient.phone_number or ''
             
             # Get token number from appointment request
             token_number = ''
@@ -434,15 +469,32 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
             patient_name = request.POST.get('patient_name', '').strip()
             patient_age = request.POST.get('patient_age', '').strip()
             patient_phone = request.POST.get('patient_phone', '').strip()
+            patient_dob_str = request.POST.get('patient_dob', '').strip()
             doctor_id = request.POST.get('doctor_id')
-            appointment_date_str = request.POST.get('appointment_date')
-            appointment_time_str = request.POST.get('appointment_time')
+            appointment_datetime_str = request.POST.get('appointment_datetime')
             duration = request.POST.get('duration_minutes')
             status = request.POST.get('appointment_status')
             amount = request.POST.get('amount_to_pay', '').strip()
             paid = request.POST.get('paid') == 'on'
             notes = request.POST.get('notes', '').strip()
             feedback = request.POST.get('feedback', '').strip()
+            
+            # Parse combined datetime string
+            appointment_datetime = None
+            if appointment_datetime_str:
+                try:
+                    appointment_datetime = datetime.datetime.strptime(
+                        appointment_datetime_str, '%d/%m/%Y %I:%M %p'
+                    )
+                except (ValueError, TypeError) as e:
+                    logger.error(f"Error parsing appointment datetime: {str(e)}")
+                    messages.error(request, "Invalid appointment date/time format. Please use DD/MM/YYYY HH:MM AM/PM")
+                    return redirect('template_appointment:appointment_edit', pk=appointment_id)
+
+            # Update appointment datetime if provided
+            if appointment_datetime:
+                appointment.appointment_date = appointment_datetime.date()
+                appointment.appointment_time = appointment_datetime.time()
 
             # Update appointment
             with transaction.atomic():
@@ -453,8 +505,9 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                         phone_number=patient_phone,
                         defaults={'is_active': True}
                     )
-                    # Update patient's user link
+                    # Update patient's user link and phone
                     appointment.clinic_patient.patient.user = user_obj
+                    appointment.clinic_patient.patient.phone_number = patient_phone
                     appointment.clinic_patient.patient.updated_by = request.user
                     appointment.clinic_patient.patient.save()
                 
@@ -469,6 +522,16 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                     appointment.clinic_patient.patient.updated_by = request.user
                     appointment.clinic_patient.patient.save()
 
+                # Update patient date of birth
+                if patient_dob_str:
+                    try:
+                        new_dob = get_date_obj(patient_dob_str)
+                        appointment.clinic_patient.patient.date_of_birth = new_dob
+                        appointment.clinic_patient.patient.updated_by = request.user
+                        appointment.clinic_patient.patient.save()
+                    except Exception:
+                        messages.warning(request, "Invalid date of birth format. Use DD/MM/YYYY. DOB not updated.")
+
                 # Update doctor
                 if doctor_id:
                     doctor = ClinicUser.objects.filter(
@@ -480,24 +543,8 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                     if doctor:
                         appointment.doctor = doctor
 
-                # Update date and time
-                if appointment_date_str:
-                    try:
-                        new_date = get_date_obj(appointment_date_str)
-                        if new_date >= get_today_date_obj().date():
-                            appointment.appointment_date = new_date
-                        else:
-                            messages.warning(request, "Appointment date cannot be in the past. Date not updated.")
-                    except Exception as e:
-                        logger.error(f"Error parsing date: {str(e)}")
-                        messages.warning(request, "Invalid date format. Date not updated.")
-
-                if appointment_time_str:
-                    try:
-                        appointment.appointment_time = get_time_obj(appointment_time_str)
-                    except Exception as e:
-                        logger.error(f"Error parsing time: {str(e)}")
-                        messages.warning(request, "Invalid time format. Time not updated.")
+                # Date and time are already updated from the combined datetime field at the start of the method
+                # No need to parse them again here
 
                 # Update duration
                 if duration:
@@ -512,11 +559,15 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                     appointment.amount_to_pay = float(amount)
 
                 appointment.paid = paid
+                if appointment.appointment_status == AppointmentStatus.IN_PROGRESS and appointment.appointment_request.request_token:
+                    appointment.clinic_patient.clinic.current_token_number = appointment.appointment_request.request_token
+                    appointment.clinic_patient.clinic.save()
+                #     appointment.clinic_patient__clinic.save()
 
                 # Auto-update status based on payment
-                if paid and appointment.amount_to_pay and float(appointment.amount_to_pay) > 0:
-                    if appointment.appointment_status == AppointmentStatus.SCHEDULED:
-                        appointment.appointment_status = AppointmentStatus.IN_PROGRESS
+                # if paid and appointment.amount_to_pay and float(appointment.amount_to_pay) > 0:
+                #     if appointment.appointment_status == AppointmentStatus.SCHEDULED:
+                #         appointment.appointment_status = AppointmentStatus.IN_PROGRESS
 
                 # Update notes and feedback
                 appointment.notes = notes

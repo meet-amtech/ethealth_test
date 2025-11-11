@@ -5,7 +5,7 @@
 logs/
 media/
 mig
-
+__pycache__/
 *.sqlite3
 **/migrations/*
 staticfiles

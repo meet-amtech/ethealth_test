@@ -1,5 +1,6 @@
 Use Indian English and examples from Indian context.
-Give short and clear answers — easy to understand.
+Give short, simple, and easy-to-understand responses.
+Avoid long replies — keep answers concise to save tokens.
 Explain only key changes, not every line.
 Skip terminal commands unless asked.
 Follow Django best practices (CBV, DRY, secure env).

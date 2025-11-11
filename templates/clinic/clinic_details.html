@@ -53,6 +53,15 @@
                         </div>
                     </div>
                 </div>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label>Current Token Number</label>
+                            <input type="number" class="form-control" value="{{ clinic.current_token_number|default:'0' }}" readonly>
+                            <small class="form-text text-muted">Current token number in use</small>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Address Information -->
@@ -108,19 +117,36 @@
                         </div>
                     </div>
                 </div>
-                <div class="row">
-                    <div class="col-sm-6">
-                        <div class="form-group">
-                            <label class="gen-label">Reset Token</label>
-                            <div class="checkbox">
-                                <label class="form-check-label">
-                                    {{ form.reset_token }} Reset Token
-                                </label>
-                            </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="form-check form-switch d-flex align-items-center">
+                            {{ form.reset_token }}
+                            <label class="form-check-label ms-2" for="{{ form.reset_token.id_for_label }}">
+                                Reset Token
+                            </label>
                             {% if form.reset_token.errors %}
-                                <div class="text-danger">{{ form.reset_token.errors.0 }}</div>
+                                <div class="invalid-feedback d-block">{{ form.reset_token.errors.0 }}</div>
                             {% endif %}
                         </div>
+                        <small class="form-text text-muted">
+                            Toggle to reset the API token on save
+                        </small>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="form-check form-switch d-flex align-items-center">
+                            {{ form.is_accepting_requests }}
+                            <label class="form-check-label ms-2" for="{{ form.is_accepting_requests.id_for_label }}">
+                                Accept New Requests
+                            </label>
+                            {% if form.is_accepting_requests.errors %}
+                                <div class="invalid-feedback d-block">{{ form.is_accepting_requests.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <small class="form-text text-muted">
+                            Toggle to control whether the clinic is accepting new appointment requests
+                        </small>
                     </div>
                 </div>
             </div>

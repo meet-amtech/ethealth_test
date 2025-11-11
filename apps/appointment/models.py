@@ -37,8 +37,14 @@ class Patient(Base):
     )
     name = models.CharField(max_length=150)
     age = models.PositiveIntegerField(null=True, blank=True)
-    
     date_of_birth = models.DateField(null=True, blank=True)
+    phone_number = models.CharField(
+        max_length=10,
+        validators=[RegexValidator(
+            regex=r"^\d{10}",
+            message="Phone number must be 10 digits only."
+        )]
+    )
 
     def __str__(self):
         return f"{self.name}"

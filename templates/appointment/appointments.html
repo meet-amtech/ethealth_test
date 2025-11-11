@@ -120,40 +120,32 @@
             <table class="table table-striped custom-table datatable">
                 <thead>
                     <tr>
+                        <th>Token No</th>
+                        <th>Date</th>
+                        <th>Time</th>
                         <th>Patient Name</th>
-                        <th>Phone Number</th>
-                        <th>Token No.</th>
+                        <th>Phone</th>
                         <th>Age</th>
-                        <th>Doctor Name</th>
-                        <th>Appointment Date</th>
-                        <th>Appointment Time</th>
-                        <th>Duration</th>
                         <th>Amount</th>
                         <th>Status</th>
-                        <th class="text-right">Action</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for appointment in appointments %}
                         <tr>
-                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">
-                                <img width="28" height="28" src="
-                                    {% if appointment.clinic_patient.patient.user and appointment.clinic_patient.patient.user.avatar %}
-                                        {{ appointment.clinic_patient.patient.user.avatar.url }}
-                                    {% else %}
-                                        {% static 'assets/img/user.jpg' %}
-                                    {% endif %}" class="rounded-circle m-r-5" alt="">
-                                {{ appointment.clinic_patient.patient.name }}
+                            <td>#{{ appointment.token_number|default:'-' }}</td>
+                            <td>{{ appointment.date_str|default:'-' }}</td>
+                            <td>{{ appointment.time_str|default:'-' }}</td>
+                            <td>
+                                <a href="{% url 'template_appointment:appointment_update' appointment.id %}">
+                                    {{ appointment.clinic_patient.patient.name|default:'' }}
+                                </a>
                             </td>
-                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">{% if appointment.phone_number %}{{ appointment.phone_number }}{% else %}-{% endif %}</td>
-                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">{% if appointment.token_number %}#{{ appointment.token_number }}{% else %}-{% endif %}</td>
-                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">{% if appointment.clinic_patient.patient.age %} {{ appointment.clinic_patient.patient.age }} {% else %} - {% endif %}</td>
-                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">{% if appointment.doctor %} {{ appointment.doctor.name }} {% else %} - {% endif %}</td>
-                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">{% if appointment.date_str %} {{ appointment.date_str }} {% else %} - {% endif %}</td>
-                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">{% if appointment.time_str %} {{ appointment.time_str }} {% else %} - {% endif %}</td>
-                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">{{ appointment.duration_minutes }} min</td>
-                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">{% if appointment.amount_to_pay %}₹{{ appointment.amount_to_pay }}{% else %}-{% endif %}</td>
-                            <td onclick="window.location.href='{% url 'template_appointment:appointment_update' appointment.id %}';">
+                            <td>{{ appointment.clinic_patient.patient.phone_number|default:'-' }}</td>
+                            <td>{{ appointment.clinic_patient.patient.age|default:'-' }}</td>
+                            <td>{% if appointment.amount_to_pay %}₹{{ appointment.amount_to_pay|floatformat:2 }}{% else %}-{% endif %}</td>
+                            <td>
                                 {% if appointment.appointment_status == 'completed' %}
                                     <span class="custom-badge status-green">{{ appointment.get_appointment_status_display }}</span>
                                 {% elif appointment.appointment_status == 'in_progress' %}

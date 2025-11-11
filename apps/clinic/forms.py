@@ -1,5 +1,5 @@
 from django import forms
-from .models import Clinic, DoctorAvailability, WeekDay
+from .models import Clinic, WeekDay
 from .models import WeekDay
 
 
@@ -35,7 +35,7 @@ class ClinicDetailsForm(forms.ModelForm):
     
     class Meta:
         model = Clinic
-        fields = ['name', 'phone_number', 'email', 'reset_token', 'website', 'api_key']
+        fields = ['name', 'phone_number', 'email', 'reset_token', 'website', 'api_key', 'is_accepting_requests', 'current_token_number']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Clinic Name'}),
             'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone Number'}),
@@ -43,6 +43,8 @@ class ClinicDetailsForm(forms.ModelForm):
             'reset_token': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'website': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'Website URL'}),
             'api_key': forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly', 'placeholder': 'API Key (Read-only)'}),
+            'current_token_number': forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly', 'placeholder': 'Current Token Number (Read-only)'}),
+            'is_accepting_requests': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
         labels = {
             'name': 'Clinic Name',
@@ -51,6 +53,8 @@ class ClinicDetailsForm(forms.ModelForm):
             'reset_token': 'Reset Token',
             'website': 'Website URL',
             'api_key': 'API Key',
+            'is_accepting_requests': 'Accepting Requests',
+            'current_token_number': 'Current Token Number', 
         }
     
     def __init__(self, *args, **kwargs):
