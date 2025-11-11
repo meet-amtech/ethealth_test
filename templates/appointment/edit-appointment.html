@@ -18,160 +18,172 @@
 {% endblock %}
 
 {% block content %}
-    
-<div class="row">
-    <div class="col-lg-8 offset-lg-2">
+<div class="row mb-3">
+    <div class="col-sm-4 col-3">
         <h4 class="page-title">Edit Appointment - {{ appointment.clinic_patient.patient.name }}</h4>
     </div>
+    <div class="col-sm-8 col-9 text-right">
+        <button type="submit" form="appointment-form" class="btn btn-primary btn-rounded float-right">
+            <i class="fa fa-save"></i> Update Appointment
+        </button>
+    </div>
 </div>
+
 <div class="row">
-    <div class="col-lg-8 offset-lg-2">
-        <form method="POST" action="{% url 'template_appointment:appointment_update' appointment.id %}">
+    <div class="col-12">
+        <form method="POST" action="{% url 'template_appointment:appointment_update' appointment.id %}" id="appointment-form">
             {% csrf_token %}
-            <!-- Hidden doctor field -->
             <input type="hidden" name="doctor_id" value="{{ appointment.doctor.id }}">
             
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Patient Name <span class="text-danger">*</span></label>
-                        <input class="form-control" type="text" name="patient_name" value="{{ appointment.clinic_patient.patient.name }}" required />
+            <!-- Patient Details Section -->
+            <div class="card-box mb-3">
+                <h4 class="card-title">Patient Details</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Patient Name <span class="text-danger">*</span></label>
+                            <input class="form-control" type="text" name="patient_name" value="{{ appointment.clinic_patient.patient.name }}" required />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Patient Phone Number <span class="text-danger">*</span></label>
+                            <input class="form-control" type="text" name="patient_phone" value="{{ phone_number }}" maxlength="10" pattern="[0-9]{10}" placeholder="10 digit phone number" required />
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Patient Phone Number <span class="text-danger">*</span></label>
-                        <input class="form-control" type="text" name="patient_phone" value="{{ phone_number }}" maxlength="10" pattern="[0-9]{10}" placeholder="10 digit phone number" required />
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Patient Date of Birth <span class="text-danger"></span></label>
+                            <div class="input-group date" id="patient_dob_picker" data-target-input="nearest">
+                                <input type="text" class="form-control datetimepicker-input" name="patient_dob" 
+                                       value="{{ appointment.clinic_patient.patient.date_of_birth|date:'d/m/Y' }}" 
+                                       data-target="#patient_dob_picker" data-toggle="datetimepicker" 
+                                       placeholder="DD/MM/YYYY"/>
+                                <div class="input-group-append" data-target="#patient_dob_picker" data-toggle="datetimepicker">
+                                    <div class="input-group-text"><i class="far fa-calendar-alt"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Patient Age</label>
+                            <input class="form-control" type="number" name="patient_age" 
+                                   value="{{ appointment.clinic_patient.patient.age|default:'' }}" 
+                                   min="0" max="150" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Patient Gender</label>
+                            <select class="form-control" name="patient_gender">
+                                <option value="">Select Gender</option>
+                                {% for value, label in gender_choices %}
+                                    <option value="{{ value }}" {% if appointment.clinic_patient.patient.gender == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Patient Date of Birth <span class="text-danger">*</span></label>
-                        <div class="input-group date" id="patient_dob_picker" data-target-input="nearest">
-                            <input type="text" class="form-control datetimepicker-input" name="patient_dob" 
-                                   value="{{ appointment.clinic_patient.patient.date_of_birth|date:'d/m/Y' }}" 
-                                   data-target="#patient_dob_picker" data-toggle="datetimepicker" 
-                                   placeholder="DD/MM/YYYY" required />
-                            <div class="input-group-append" data-target="#patient_dob_picker" data-toggle="datetimepicker">
-                                <div class="input-group-text"><i class="far fa-calendar-alt"></i></div>
+            <!-- Appointment Details Section -->
+            <div class="card-box">
+                <h4 class="card-title">Appointment Details</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Appointment Date & Time <span class="text-danger">*</span></label>
+                            <div class="input-group date" id="appointment_datetime_picker" data-target-input="nearest">
+                                <input type="text" class="form-control datetimepicker-input" name="appointment_datetime" 
+                                       value="{{ appointment.date_str }} {{ appointment.time_str }}"
+                                       data-toggle="datetimepicker" data-target="#appointment_datetime_picker" 
+                                       required />
+                                <div class="input-group-append" data-target="#appointment_datetime_picker" data-toggle="datetimepicker">
+                                    <div class="input-group-text"><i class="far fa-calendar-alt"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Token Number</label>
+                            <input class="form-control" type="text" value="{% if token_number %}{{ token_number }}{% else %}-{% endif %}" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Duration (minutes) <span class="text-danger">*</span></label>
+                            <input class="form-control" type="number" name="duration_minutes" value="{{ appointment.duration_minutes }}" min="5" max="480" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Amount to Pay (₹)</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">₹</span>
+                                </div>
+                                <input class="form-control" type="number" min="0" step="0.01" name="amount_to_pay" value="{{ appointment.amount_to_pay|default:0 }}">
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Patient Age</label>
-                        <input class="form-control" type="number" name="patient_age" 
-                               value="{{ appointment.clinic_patient.patient.age|default:'' }}" 
-                               min="0" max="150" />
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select class="form-control" name="appointment_status">
+                                {% for value, label in status_choices %}
+                                    <option value="{{ value }}" {% if appointment.appointment_status == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Patient Gender</label>
-                        <select class="form-control" name="patient_gender">
-                            <option value="">Select Gender</option>
-                            {% for value, label in gender_choices %}
-                                <option value="{{ value }}" {% if appointment.clinic_patient.patient.gender == value %}selected{% endif %}>
-                                    {{ label }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Status</label>
-                        <select class="form-control" name="appointment_status">
-                            {% for value, label in status_choices %}
-                                <option value="{{ value }}" {% if appointment.appointment_status == value %}selected{% endif %}>
-                                    {{ label }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Appointment Date & Time <span class="text-danger">*</span></label>
-                        <div class="input-group date" id="appointment_datetime_picker" data-target-input="nearest">
-                            <input type="text" class="form-control datetimepicker-input" name="appointment_datetime" 
-                                   value="{{ appointment.date_str }} {{ appointment.time_str }}"
-                                   data-toggle="datetimepicker" data-target="#appointment_datetime_picker" 
-                                   required />
-                            <div class="input-group-append" data-target="#appointment_datetime_picker" data-toggle="datetimepicker">
-                                <div class="input-group-text"><i class="far fa-calendar-alt"></i></div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Payment Status</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="paid" id="paid" {% if appointment.paid %}checked{% endif %}>
+                                <label class="form-check-label" for="paid">
+                                    Mark as Paid
+                                </label>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Token Number</label>
-                        <input class="form-control" type="text" value="{% if token_number %}#{{ token_number }}{% else %}-{% endif %}" readonly>
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Duration (minutes)</label>
-                        <input class="form-control" type="number" name="duration_minutes" value="{{ appointment.duration_minutes }}" min="5" max="480">
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Amount To Pay</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text">₹</span>
-                            </div>
-                            <input class="form-control" type="number" min="0" step="0.01" name="amount_to_pay" value="{{ appointment.amount_to_pay|default:0 }}">
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label>Notes</label>
+                            <textarea class="form-control" name="notes" rows="3">{{ appointment.notes|default:'' }}</textarea>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Payment Status</label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="paid" id="paid" {% if appointment.paid %}checked{% endif %}>
-                            <label class="form-check-label" for="paid">
-                                Mark as Paid
-                            </label>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label>Feedback</label>
+                            <textarea class="form-control" name="feedback" rows="3">{{ appointment.feedback|default:'' }}</textarea>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="form-group">
-                        <label>Notes</label>
-                        <textarea class="form-control" name="notes" rows="3">{{ appointment.notes|default:'' }}</textarea>
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="form-group">
-                        <label>Feedback</label>
-                        <textarea class="form-control" name="feedback" rows="3">{{ appointment.feedback|default:'' }}</textarea>
-                    </div>
-                </div>
-            </div>
-            <div class="m-t-20 text-center">
-                <button id="save-appointment" class="btn btn-primary submit-btn" type="submit">Update Appointment</button>
             </div>
         </form>
     </div>
@@ -180,7 +192,6 @@
 {% endblock %}
 
 {% block script %}
-
 <!-- DateTime Picker JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.39.0/js/tempusdominus-bootstrap-4.min.js"></script>

@@ -133,18 +133,16 @@
                 </thead>
                 <tbody>
                     {% for appointment in appointments %}
-                        <tr>
-                            <td>#{{ appointment.token_number|default:'-' }}</td>
-                            <td>{{ appointment.date_str|default:'-' }}</td>
-                            <td>{{ appointment.time_str|default:'-' }}</td>
-                            <td>
-                                <a href="{% url 'template_appointment:appointment_update' appointment.id %}">
-                                    {{ appointment.clinic_patient.patient.name|default:'' }}
-                                </a>
+                        <tr data-href="{% url 'template_appointment:appointment_update' appointment.id %}" style="cursor: pointer;">
+                            <td class="clickable-cell">{{ appointment.token_number|default:'-' }}</td>
+                            <td class="clickable-cell">{{ appointment.date_str|default:'-' }}</td>
+                            <td class="clickable-cell">{{ appointment.time_str|default:'-' }}</td>
+                            <td class="clickable-cell">
+                                {{ appointment.clinic_patient.patient.name|default:'' }}
                             </td>
-                            <td>{{ appointment.clinic_patient.patient.phone_number|default:'-' }}</td>
-                            <td>{{ appointment.clinic_patient.patient.age|default:'-' }}</td>
-                            <td>{% if appointment.amount_to_pay %}₹{{ appointment.amount_to_pay|floatformat:2 }}{% else %}-{% endif %}</td>
+                            <td class="clickable-cell">{{ appointment.clinic_patient.patient.phone_number|default:'-' }}</td>
+                            <td class="clickable-cell">{{ appointment.clinic_patient.patient.age|default:'-' }}</td>
+                            <td class="clickable-cell">{% if appointment.amount_to_pay %}₹{{ appointment.amount_to_pay|floatformat:2 }}{% else %}-{% endif %}</td>
                             <td>
                                 {% if appointment.appointment_status == 'completed' %}
                                     <span class="custom-badge status-green">{{ appointment.get_appointment_status_display }}</span>
@@ -200,6 +198,42 @@
 {% endblock %}
 
 {% block script %}
+<script>
+    // Make table rows clickable
+    document.addEventListener('DOMContentLoaded', function() {
+        const rows = document.querySelectorAll('tr[data-href]');
+        
+        rows.forEach(row => {
+            // Make the entire row clickable
+            row.addEventListener('click', function(e) {
+                // Don't navigate if clicking on status or action columns or their children
+                if (e.target.closest('td:last-child') || e.target.closest('td:nth-last-child(2)')) {
+                    return;
+                }
+                // Don't navigate if clicking on a link or button
+                if (e.target.tagName === 'A' || e.target.closest('a, button, .dropdown, .dropdown-menu')) {
+                    return;
+                }
+                window.location.href = this.dataset.href;
+            });
+
+            // Make individual cells not trigger the row click when they have their own click handlers
+            const nonClickableCells = row.querySelectorAll('td:last-child, td:nth-last-child(2)');
+            nonClickableCells.forEach(cell => {
+                cell.style.cursor = 'default';
+                cell.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            });
+        });
+
+        // Make clickable cells show pointer cursor
+        document.querySelectorAll('.clickable-cell').forEach(cell => {
+            cell.style.cursor = 'pointer';
+        });
+    });
+</script>
+
 <script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
 <script src="{% static 'assets/js/dataTables.bootstrap4.min.js' %}"></script>
 
