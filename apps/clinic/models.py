@@ -67,6 +67,30 @@ class Clinic(Base):
         return enc_dec.encryption()
 
     @staticmethod
+    def create_clinic_patient(patient, clinic):
+        if not isinstance(patient, Patient):
+            logger.error("Invalid patient instance provided.")
+            raise ValueError("Invalid patient instance provided.")
+        if not isinstance(clinic, Clinic):
+            logger.error("Invalid clinic instance provided.")
+            raise ValueError("Invalid clinic instance provided.")
+
+        # Check if the clinic patient already exists
+        existing_clinic_patient = ClinicPatient.objects.filter(patient=patient, clinic=clinic).first()
+        if existing_clinic_patient:
+            logger.info("Clinic patient already exists.")
+            return existing_clinic_patient
+
+        # Create the ClinicPatient instance
+        clinic_patient = ClinicPatient.objects.create(
+            patient=patient,
+            clinic=clinic,
+            note=note,
+            patient_nickname=patient_nickname
+        )
+        return clinic_patient
+
+    @staticmethod
     def get_default_clinic_user(clinic_id):
         try:
             clinic_user = ClinicUser.objects.filter(clinic__id=clinic_id, is_admin=True).first()
@@ -77,7 +101,7 @@ class Clinic(Base):
             return clinic_user
         except ClinicUser.DoesNotExist:
             return None
-
+    
 
 class ClinicUser(Base):
     clinic = models.ForeignKey('Clinic', on_delete=models.CASCADE, related_name='clinic_users')

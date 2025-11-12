@@ -9,3 +9,6 @@ __pycache__/
 *.sqlite3
 **/migrations/*
 staticfiles
+
+.windsurf/rules/kluster-code-verify.md
+.kluster

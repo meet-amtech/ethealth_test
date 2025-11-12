@@ -106,74 +106,107 @@ class AppointmentListView(LoginRequiredMixin, View):
             status_filter = request.GET.get('status', '')
             search_query = request.GET.get('search', '').strip()
 
-            # Build filters
+            # Build base filters for AppointmentRequest
             filters = {
-                'clinic_patient__clinic_id': clinic_id,
+                'clinic_id': clinic_id,
                 'is_deleted': False,
                 'is_active': True
             }
 
             # Apply date filters
+            date_filter = {}
             if start_date:
                 try:
-                    filters['appointment_date__gte'] = get_date_obj(start_date)
+                    date_filter['appointment_date__gte'] = get_date_obj(start_date)
                 except:
                     pass
-            else:
-                # Default to today's appointments
-                filters['appointment_date__gte'] = get_today_date_obj().date()
-
             if end_date:
                 try:
-                    filters['appointment_date__lte'] = get_date_obj(end_date)
+                    date_filter['appointment_date__lte'] = get_date_obj(end_date)
                 except:
                     pass
-            else:
-                # Default to today's appointments
-                filters['appointment_date__lte'] = get_today_date_obj().date()
 
-            # Apply status filter
-            if status_filter:
-                filters['appointment_status'] = status_filter
+            # Get appointment requests with related data
+            from django.db.models import Prefetch, OuterRef, Subquery
+            
+            # Subquery to get related appointment status if exists
+            appointment_status_subquery = Appointment.objects.filter(
+                appointment_request_id=OuterRef('pk')
+            ).values('appointment_status')[:1]
 
-            # Get appointments
-            appointments = Appointment.objects.filter(
+            appointment_requests = AppointmentRequest.objects.filter(
                 **filters
+            ).annotate(
+                appointment_status=Subquery(appointment_status_subquery)
             ).select_related(
-                'clinic_patient__patient__user',
-                'clinic_patient__clinic',
-                'doctor',
-                'appointment_request'
-            ).order_by('-appointment_date', '-appointment_time')
+                'clinic'
+            ).order_by('-created_at')
 
-            # Apply search filter on all displayed fields
+            # Apply search filter
             if search_query:
-                appointments = appointments.filter(
-                    Q(clinic_patient__patient__name__icontains=search_query) |
-                    Q(clinic_patient__patient__user__phone_number__icontains=search_query) |
-                    Q(doctor__name__icontains=search_query) |
-                    Q(appointment_request__request_token__icontains=search_query) |
-                    Q(appointment_status__icontains=search_query)
+                appointment_requests = appointment_requests.filter(
+                    Q(name__icontains=search_query) |
+                    Q(phone__icontains(search_query)) |
+                    Q(request_token__icontains=search_query) |
+                    Q(appointment_request_status__icontains=search_query)
                 )
 
-            # Format dates and times for display
-            for appointment in appointments:
-                appointment.date_str = get_date_str(appointment.appointment_date)
-                appointment.time_str = get_time_str(appointment.appointment_time)
-                # Get phone number from patient's user
-                if appointment.clinic_patient.patient.user:
-                    appointment.phone_number = appointment.clinic_patient.patient.user.phone_number
-                else:
-                    appointment.phone_number = None
-                # Get token number from appointment request
-                if appointment.appointment_request:
-                    appointment.token_number = appointment.appointment_request.request_token
-                else:
-                    appointment.token_number = None
+            # Prepare data for template
+            appointments = []
+            for req in appointment_requests:
+                # Get related appointment if exists
+                appointment = Appointment.objects.filter(
+                    appointment_request=req
+                ).select_related('clinic_patient__patient').first()
 
+                # Create a dictionary with all required fields for the template
+                appointment_data = {
+                    'id': req.id,
+                    'token_number': req.request_token,
+                    'appointment_date': getattr(appointment, 'appointment_date', None),
+                    'date_str': get_date_str(getattr(appointment, 'appointment_date', None)) if getattr(appointment, 'appointment_date', None) else '-',
+                    'appointment_time': getattr(appointment, 'appointment_time', None),
+                    'time_str': get_time_str(getattr(appointment, 'appointment_time', None)) if getattr(appointment, 'appointment_time', None) else '-',
+                    'clinic_patient': {
+                        'patient': {
+                            'name': req.name,
+                            'age': req.age,
+                            'phone_number': req.phone,
+                            'user': {'phone_number': req.phone} if req.phone else None
+                        }
+                    },
+                    'amount_to_pay': getattr(appointment, 'amount_to_pay', None),
+                    'appointment_status': req.appointment_status if req.appointment_request_status == 'confirmed' and hasattr(req, 'appointment_status') and req.appointment_status else req.appointment_request_status,
+                    'appointment_request': req,
+                    'is_confirmed': req.appointment_request_status == 'confirmed',
+                    'doctor': getattr(appointment, 'doctor', None) if appointment else None
+                }
+                
+                # If there's a related appointment, include its data
+                if appointment and appointment.clinic_patient:
+                    appointment_data.update({
+                        'clinic_patient': {
+                            'patient': {
+                                'name': appointment.clinic_patient.patient.name,
+                                'age': appointment.clinic_patient.patient.age,
+                                'phone_number': appointment.clinic_patient.patient.phone_number,
+                                'user': {'phone_number': appointment.clinic_patient.patient.phone_number} if appointment.clinic_patient.patient.phone_number else None
+                            }
+                        },
+                        'amount_to_pay': appointment.amount_to_pay,
+                        'appointment_status': appointment.appointment_status,
+                        'doctor': appointment.doctor
+                    })
+                
+                appointments.append(type('AppointmentObject', (), appointment_data))
+
+# Combine status choices from both models
+            status_choices = list(AppointmentRequestStatus.choices)
+            status_choices.extend([(f'appt_{status[0]}', status[1]) for status in AppointmentStatus.choices if status[0] not in [s[0] for s in status_choices]])
+            
             context = {
                 'appointments': appointments,
-                'status_choices': AppointmentStatus.choices,
+                'status_choices': status_choices,
                 'current_status': status_filter,
                 'search_query': search_query,
             }

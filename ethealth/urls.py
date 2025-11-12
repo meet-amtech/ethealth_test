@@ -32,3 +32,7 @@ urlpatterns = [
 urlpatterns += [
     path('admin/', admin.site.urls)
 ]
+
+urlpatterns += [
+    path("api/appointments/", include("apps.appointment.urls.api_urls"), name='appointment-urls')
+]

@@ -55,6 +55,13 @@ class Patient(Base):
         ordering = ['-created_at']
         db_table = 'eth_patient'
 
+    @staticmethod
+    def create_patient(user, name, phone_number, age=0, date_of_birth=None):
+        patient = self.Meta.model.filter(user=user).first()
+        if patient:
+            return patient
+        return Patient.objects.create(user=user,name=name,age=age,date_of_birth=date_of_birth,phone_number=phone_number)
+
 
 class ClinicPatient(Base):
     """Model to link patients to specific clinics"""
@@ -78,6 +85,29 @@ class ClinicPatient(Base):
         ordering = ['-created_at']
         db_table = 'eth_clinic_patient'
         unique_together = ['clinic', 'patient']
+
+    @staticmethod
+    def create_clinic_patient(patient, clinic):
+        if not isinstance(patient, Patient):
+            logger.error("Invalid patient instance provided.")
+            raise ValueError("Invalid patient instance provided.")
+        if not isinstance(clinic, Clinic):
+            logger.error("Invalid clinic instance provided.")
+            raise ValueError("Invalid clinic instance provided.")
+
+        # Check if the clinic patient already exists
+        existing_clinic_patient = ClinicPatient.objects.filter(patient=patient, clinic=clinic).first()
+        if existing_clinic_patient:
+            logger.info("Clinic patient already exists.")
+            return existing_clinic_patient
+
+        # Create the ClinicPatient instance
+        clinic_patient = ClinicPatient.objects.create(
+            patient=patient,
+            clinic=clinic
+        )
+        return clinic_patient
+
 
 
 class AppointmentRequest(Base):
@@ -154,6 +184,23 @@ class AppointmentRequest(Base):
         return 1
 
     def save(self, *args, **kwargs):
+        if self.appointment_request_status == 'confirmed':
+            # Use atomic transaction to ensure data integrity
+            with transaction.atomic():
+                patient_user, created= settings.AUTH_USER_MODEL.objects.get_or_create(phone_number=self.patient_phone)
+                if not patient_user:
+                    logger.error("Failed to create a user for the patient.")
+                    raise ValidationError("Failed to create a user for the patient.")
+                patient = Patient.create_patient(user=patient_user, name=self.patient_name, phone_number=self.patient_phone)
+                if not patient:
+                    logger.error("Failed to create a patient.")
+                    raise ValidationError("Failed to create a patient.")
+                clinic_patient = ClinicPatient.create_clinic_patient(patient=patient, clinic=self.clinic)
+                if not clinic_patient:
+                    logger.error("Failed to create a clinic patient.")
+                    raise ValidationError("Failed to create a clinic patient.")
+                Appointment.objects.get_or_create(clinic_patient=clinic_patient, appointment_request=self, doctor=self.doctor, appointment_date=self.appointment_date, appointment_time=self.appointment_time)
+
         # Auto-generate token if not set
         if not self.request_token:
             self.request_token = self.generate_next_request_token()

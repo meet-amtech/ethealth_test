@@ -85,7 +85,8 @@
                             <select class="form-control" name="patient_gender">
                                 <option value="">Select Gender</option>
                                 {% for value, label in gender_choices %}
-                                    <option value="{{ value }}" {% if appointment.clinic_patient.patient.gender == value %}selected{% endif %}>
+                                    <option value="{{ value }}" 
+                                        {% if appointment.appointment_request.gender|lower == value|lower %}selected="selected"{% endif %}>
                                         {{ label }}
                                     </option>
                                 {% endfor %}
