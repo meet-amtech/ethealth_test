@@ -1,11 +1,12 @@
 import logging
 from django.core.validators import RegexValidator
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 
 from apps.base.models import Base
+from apps.users.models import User 
 from apps.clinic.models import Clinic, ClinicUser, ClinicUserRole, Gender
 from ethealth import settings
 
@@ -183,27 +184,40 @@ class AppointmentRequest(Base):
 
         return 1
 
-    def save(self, *args, **kwargs):
-        if self.appointment_request_status == 'confirmed':
-            # Use atomic transaction to ensure data integrity
-            with transaction.atomic():
-                patient_user, created= settings.AUTH_USER_MODEL.objects.get_or_create(phone_number=self.patient_phone)
-                if not patient_user:
-                    logger.error("Failed to create a user for the patient.")
-                    raise ValidationError("Failed to create a user for the patient.")
-                patient = Patient.create_patient(user=patient_user, name=self.patient_name, phone_number=self.patient_phone)
-                if not patient:
-                    logger.error("Failed to create a patient.")
-                    raise ValidationError("Failed to create a patient.")
-                clinic_patient = ClinicPatient.create_clinic_patient(patient=patient, clinic=self.clinic)
-                if not clinic_patient:
-                    logger.error("Failed to create a clinic patient.")
-                    raise ValidationError("Failed to create a clinic patient.")
-                Appointment.objects.get_or_create(clinic_patient=clinic_patient, appointment_request=self, doctor=self.doctor, appointment_date=self.appointment_date, appointment_time=self.appointment_time)
+    def _confirm_appointment(self):
+        """
+        Creates or updates User, Patient, ClinicPatient, and Appointment records
+        when the request status is 'confirmed'.
+        """
+        with transaction.atomic():
+            user, _ = User.objects.get_or_create(phone_number=self.phone)
 
+            patient, _ = Patient.objects.update_or_create(
+                phone_number=self.phone,
+                defaults={'name': self.name, 'age': self.age, 'user': user}
+            )
+
+            clinic_patient, _ = ClinicPatient.objects.get_or_create(
+                clinic_id=self.clinic_id,
+                patient=patient
+            )
+
+            Appointment.objects.update_or_create(
+                appointment_request=self,
+                defaults={
+                    'clinic_patient': clinic_patient,
+                    'appointment_status': AppointmentStatus.SCHEDULED,
+                }
+            )
+
+    def save(self, *args, **kwargs):
         # Auto-generate token if not set
         if not self.request_token:
             self.request_token = self.generate_next_request_token()
+        
+        if self.pk and self.appointment_request_status == AppointmentRequestStatus.CONFIRMED:
+            self._confirm_appointment()
+
         super().save(*args, **kwargs)
 
     class Meta:

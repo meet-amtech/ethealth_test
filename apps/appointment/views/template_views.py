@@ -160,13 +160,15 @@ class AppointmentListView(LoginRequiredMixin, View):
                 ).select_related('clinic_patient__patient').first()
 
                 # Create a dictionary with all required fields for the template
+                is_confirmed = req.appointment_request_status == 'confirmed'
                 appointment_data = {
                     'id': req.id,
                     'token_number': req.request_token,
-                    'appointment_date': getattr(appointment, 'appointment_date', None),
-                    'date_str': get_date_str(getattr(appointment, 'appointment_date', None)) if getattr(appointment, 'appointment_date', None) else '-',
-                    'appointment_time': getattr(appointment, 'appointment_time', None),
-                    'time_str': get_time_str(getattr(appointment, 'appointment_time', None)) if getattr(appointment, 'appointment_time', None) else '-',
+                    'appointment_date': getattr(appointment, 'appointment_date', None) if is_confirmed else None,
+                    'appointment_time': getattr(appointment, 'appointment_time', None) if is_confirmed else None,
+                    'request_created_at': req.created_at,
+                    'date_str': get_date_str(getattr(appointment, 'appointment_date', None)) if is_confirmed else req.created_at.strftime('%d/%m/%Y'),
+                    'time_str': get_time_str(getattr(appointment, 'appointment_time', None)) if is_confirmed else '-',
                     'clinic_patient': {
                         'patient': {
                             'name': req.name,
@@ -176,9 +178,9 @@ class AppointmentListView(LoginRequiredMixin, View):
                         }
                     },
                     'amount_to_pay': getattr(appointment, 'amount_to_pay', None),
-                    'appointment_status': req.appointment_status if req.appointment_request_status == 'confirmed' and hasattr(req, 'appointment_status') and req.appointment_status else req.appointment_request_status,
+                    'appointment_status': req.appointment_status if is_confirmed and hasattr(req, 'appointment_status') and req.appointment_status else req.appointment_request_status,
                     'appointment_request': req,
-                    'is_confirmed': req.appointment_request_status == 'confirmed',
+                    'is_confirmed': is_confirmed,
                     'doctor': getattr(appointment, 'doctor', None) if appointment else None
                 }
                 
@@ -200,7 +202,7 @@ class AppointmentListView(LoginRequiredMixin, View):
                 
                 appointments.append(type('AppointmentObject', (), appointment_data))
 
-# Combine status choices from both models
+            # Combine status choices from both models
             status_choices = list(AppointmentRequestStatus.choices)
             status_choices.extend([(f'appt_{status[0]}', status[1]) for status in AppointmentStatus.choices if status[0] not in [s[0] for s in status_choices]])
             
@@ -440,13 +442,21 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                 messages.error(request, "No clinic selected.")
                 return redirect('dashboard')
 
-            appointment_id = kwargs.get('pk')
-            appointment = get_object_or_404(
-                Appointment,
-                id=appointment_id,
-                clinic_patient__clinic_id=clinic_id,
+            appointment_request_id = kwargs.get('pk')
+            
+            # Try to get the appointment request
+            appointment_request = get_object_or_404(
+                AppointmentRequest,
+                id=appointment_request_id,
+                clinic_id=clinic_id,
                 is_deleted=False
             )
+
+            # Try to get existing appointment if it exists
+            appointment = Appointment.objects.filter(
+                appointment_request=appointment_request,
+                is_deleted=False
+            ).first()
 
             # Get doctors for this clinic
             doctors = ClinicUser.objects.filter(
@@ -456,26 +466,30 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                 is_deleted=False
             )
 
-            # Format dates for display
-            appointment.date_str = get_date_str(appointment.appointment_date)
-            appointment.time_str = get_time_str(appointment.appointment_time)
-            
-            # Get phone number from patient
-            phone_number = appointment.clinic_patient.patient.phone_number or ''
-            
-            # Get token number from appointment request
-            token_number = ''
-            if appointment.appointment_request:
-                token_number = appointment.appointment_request.request_token
-
             context = {
                 'appointment': appointment,
+                'appointment_request': appointment_request,
                 'doctors': doctors,
                 'status_choices': AppointmentStatus.choices,
                 'gender_choices': Gender.choices,
-                'phone_number': phone_number,
-                'token_number': token_number,
+                'is_new': appointment is None
             }
+            
+            if appointment:
+                # Existing appointment - format dates and add to context
+                appointment.date_str = get_date_str(appointment.appointment_date)
+                appointment.time_str = get_time_str(appointment.appointment_time)
+                context.update({
+                    'phone_number': appointment.clinic_patient.patient.phone_number or '',
+                    'token_number': appointment_request.request_token or '',
+                })
+            else:
+                # New appointment - use request details
+                context.update({
+                    'phone_number': appointment_request.phone or '',
+                    'token_number': appointment_request.request_token or '',
+                })
+            
             return render(request, self.template_name, context)
 
         except Exception as e:
@@ -490,11 +504,13 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                 messages.error(request, "No clinic selected.")
                 return redirect('dashboard')
 
-            appointment_id = kwargs.get('pk')
-            appointment = get_object_or_404(
-                Appointment,
-                id=appointment_id,
-                clinic_patient__clinic_id=clinic_id,
+            appointment_request_id = kwargs.get('pk')
+            
+            # Get the appointment request
+            appointment_request = get_object_or_404(
+                AppointmentRequest,
+                id=appointment_request_id,
+                clinic_id=clinic_id,
                 is_deleted=False
             )
 
@@ -503,11 +519,12 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
             patient_age = request.POST.get('patient_age', '').strip()
             patient_phone = request.POST.get('patient_phone', '').strip()
             patient_dob_str = request.POST.get('patient_dob', '').strip()
+            patient_gender = request.POST.get('patient_gender', '').strip()
             doctor_id = request.POST.get('doctor_id')
             appointment_datetime_str = request.POST.get('appointment_datetime')
             duration = request.POST.get('duration_minutes')
             status = request.POST.get('appointment_status')
-            amount = request.POST.get('amount_to_pay', '').strip()
+            amount = request.POST.get('amount_to_pay', '0').strip()
             paid = request.POST.get('paid') == 'on'
             notes = request.POST.get('notes', '').strip()
             feedback = request.POST.get('feedback', '').strip()
@@ -522,91 +539,107 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                 except (ValueError, TypeError) as e:
                     logger.error(f"Error parsing appointment datetime: {str(e)}")
                     messages.error(request, "Invalid appointment date/time format. Please use DD/MM/YYYY HH:MM AM/PM")
-                    return redirect('template_appointment:appointment_edit', pk=appointment_id)
+                    return redirect('template_appointment:appointment_edit', pk=appointment_request_id)
+            else:
+                messages.error(request, "Appointment date and time are required.")
+                return redirect('template_appointment:appointment_edit', pk=appointment_request_id)
 
-            # Update appointment datetime if provided
-            if appointment_datetime:
-                appointment.appointment_date = appointment_datetime.date()
-                appointment.appointment_time = appointment_datetime.time()
-
-            # Update appointment
             with transaction.atomic():
-                # Handle phone number update
-                if patient_phone:
-                    # Get or create User with new phone number
-                    user_obj, user_created = User.objects.get_or_create(
-                        phone_number=patient_phone,
-                        defaults={'is_active': True}
-                    )
-                    # Update patient's user link and phone
-                    appointment.clinic_patient.patient.user = user_obj
-                    appointment.clinic_patient.patient.phone_number = patient_phone
-                    appointment.clinic_patient.patient.updated_by = request.user
-                    appointment.clinic_patient.patient.save()
+                appointment = Appointment.objects.filter(
+                    appointment_request=appointment_request,
+                    is_deleted=False
+                ).first()
+
+                if appointment:
+                    # Update existing appointment logic
+                    appointment_request.name = patient_name
+                    appointment_request.phone = patient_phone
+                    appointment_request.age = int(patient_age) if patient_age else None
+                    appointment_request.gender = patient_gender
+                    appointment_request.updated_by = request.user
+
+                    if status == AppointmentRequestStatus.CANCELLED:
+                        appointment_request.appointment_request_status = AppointmentRequestStatus.CANCELLED
+                        messages.info(request, "Appointment request was cancelled.")
+                    if status == AppointmentRequestStatus.PENDING:
+                        appointment_request.appointment_request_status =  AppointmentRequestStatus.PENDING
+                        messages.info(request, "Appointment request was pending.")
+                    elif appointment_request.appointment_request_status == AppointmentRequestStatus.CONFIRMED:
+                        user = User.objects.get(phone_number=patient_phone)
+
+                        patient = appointment.clinic_patient.patient
+                        patient.name = patient_name
+                        patient.age = int(patient_age) if patient_age else None
+                        patient.phone_number = patient_phone
+                        patient.user = user
+                        if patient_dob_str:
+                            try:
+                                patient.date_of_birth = get_date_obj(patient_dob_str)
+                            except (ValueError, TypeError):
+                                messages.warning(request, "Invalid date of birth format. DOB not updated.")
+                        patient.updated_by = request.user
+                        patient.save()
+
+                        clinic = get_object_or_404(Clinic, id=clinic_id)
+                        # clinic_patient, _ = ClinicPatient.objects.create(clinic=clinic, patient=patient)
+                        # appointment.clinic_patient = clinic_patient
+
+                        # if doctor_id:
+                        #     appointment.doctor = get_object_or_404(ClinicUser, id=doctor_id, clinic_id=clinic_id)
+                        
+                        appointment.appointment_date = appointment_datetime.date()
+                        appointment.appointment_time = appointment_datetime.time()
+                        appointment.duration_minutes = int(duration) if duration else 30
+                        appointment.appointment_status = status
+                        appointment.amount_to_pay = float(amount) if amount else 0.0
+                        appointment.paid = paid
+                        appointment.notes = notes
+                        appointment.feedback = feedback
+                        appointment.updated_by = request.user
+                        appointment.save()
+
+                    appointment_request.save()
+                    messages.success(request, "Appointment updated successfully.")
+                else:
+                    # Create new appointment logic
+                    appointment_request.name = patient_name
+                    appointment_request.phone = patient_phone
+                    appointment_request.age = int(patient_age) if patient_age else None
+                    appointment_request.gender = patient_gender
+                    appointment_request.updated_by = request.user
+
+                    if status == AppointmentRequestStatus.CANCELLED:
+                        appointment_request.appointment_request_status = AppointmentRequestStatus.CANCELLED
+                        appointment_request.confirmed_at = timezone.now()
+                        appointment_request.save()
+                        messages.info(request, "Appointment request was cancelled.")
+
+                    if status == AppointmentRequestStatus.CONFIRMED:
+                        appointment_request.appointment_request_status = AppointmentRequestStatus.CONFIRMED
+                        appointment_request.confirmed_at = timezone.now()
+                        appointment_request.save()
                 
-                # Update patient information if provided
-                if patient_name and patient_name != appointment.clinic_patient.patient.name:
-                    appointment.clinic_patient.patient.name = patient_name
-                    appointment.clinic_patient.patient.updated_by = request.user
-                    appointment.clinic_patient.patient.save()
+                    
 
-                if patient_age:
-                    appointment.clinic_patient.patient.age = int(patient_age)
-                    appointment.clinic_patient.patient.updated_by = request.user
-                    appointment.clinic_patient.patient.save()
-
-                # Update patient date of birth
-                if patient_dob_str:
-                    try:
-                        new_dob = get_date_obj(patient_dob_str)
-                        appointment.clinic_patient.patient.date_of_birth = new_dob
-                        appointment.clinic_patient.patient.updated_by = request.user
-                        appointment.clinic_patient.patient.save()
-                    except Exception:
-                        messages.warning(request, "Invalid date of birth format. Use DD/MM/YYYY. DOB not updated.")
-
-                # Update doctor
-                if doctor_id:
-                    doctor = ClinicUser.objects.filter(
-                        id=doctor_id,
-                        clinic_id=clinic_id,
-                        role__in=[ClinicUserRole.DOCTOR, ClinicUserRole.ADMIN],
-                        is_deleted=False
-                    ).first()
-                    if doctor:
-                        appointment.doctor = doctor
-
-                # Date and time are already updated from the combined datetime field at the start of the method
-                # No need to parse them again here
-
-                # Update duration
-                if duration:
-                    appointment.duration_minutes = int(duration)
-
-                # Update status
-                if status:
-                    appointment.appointment_status = status
-
-                # Update payment information
-                if amount:
-                    appointment.amount_to_pay = float(amount)
-
-                appointment.paid = paid
-                if appointment.appointment_status == AppointmentStatus.IN_PROGRESS and appointment.appointment_request.request_token:
-                    appointment.clinic_patient.clinic.current_token_number = appointment.appointment_request.request_token
-                    appointment.clinic_patient.clinic.save()
-                #     appointment.clinic_patient__clinic.save()
-
-                # Auto-update status based on payment
-                # if paid and appointment.amount_to_pay and float(appointment.amount_to_pay) > 0:
-                #     if appointment.appointment_status == AppointmentStatus.SCHEDULED:
-                #         appointment.appointment_status = AppointmentStatus.IN_PROGRESS
-
-                # Update notes and feedback
-                appointment.notes = notes
-                appointment.feedback = feedback
-                appointment.updated_by = request.user
-                appointment.save()
+                        appointment = Appointment.objects.get(appointment_request=appointment_request)
+                        if doctor_id:
+                            appointment.doctor = get_object_or_404(ClinicUser, id=doctor_id, clinic_id=clinic_id)
+                        
+                        appointment.appointment_date = appointment_datetime.date()
+                        appointment.appointment_time = appointment_datetime.time()
+                        appointment.duration_minutes = int(duration) if duration else 30
+                        appointment.appointment_status = AppointmentStatus.SCHEDULED
+                        appointment.amount_to_pay = float(amount) if amount else 0.0
+                        appointment.paid = paid
+                        appointment.notes = notes
+                        appointment.feedback = feedback
+                        appointment.updated_by = request.user
+                        appointment.save()
+                        messages.success(request, "Appointment created successfully.")
+                    else:
+                        appointment_request.appointment_request_status = AppointmentRequestStatus.CANCELLED
+                        appointment_request.save()
+                        messages.info(request, "Appointment request was cancelled.")
 
             messages.success(request, "Appointment updated successfully.")
             return redirect(self.success_url)
@@ -614,7 +647,7 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
         except Exception as e:
             logger.error(f"Error updating appointment: {str(e)}", exc_info=True)
             messages.error(request, f"Error updating appointment: {str(e)}")
-            return redirect(reverse_lazy('template_appointment:appointment_update', kwargs={'pk': appointment_id}))
+            return redirect(reverse_lazy('template_appointment:appointment_update', kwargs={'pk': appointment_request_id}))
 
 
 class AppointmentDeleteView(LoginRequiredMixin, View):

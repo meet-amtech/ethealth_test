@@ -20,18 +20,24 @@
 {% block content %}
 <div class="row mb-3">
     <div class="col-sm-4 col-3">
-        <h4 class="page-title">Edit Appointment - {{ appointment.clinic_patient.patient.name }}</h4>
+        <h4 class="page-title">
+            {% if is_new %}
+                New Appointment - {{ appointment.clinic_patient.patient.name|default:appointment_request.name }}
+            {% else %}
+                Edit Appointment - {{ appointment.clinic_patient.patient.name }}
+            {% endif %}
+        </h4>
     </div>
     <div class="col-sm-8 col-9 text-right">
         <button type="submit" form="appointment-form" class="btn btn-primary btn-rounded float-right">
-            <i class="fa fa-save"></i> Update Appointment
+            <i class="fa fa-save"></i> {% if is_new %}Create{% else %}Update{% endif %} Appointment
         </button>
     </div>
 </div>
 
 <div class="row">
     <div class="col-12">
-        <form method="POST" action="{% url 'template_appointment:appointment_update' appointment.id %}" id="appointment-form">
+        <form method="POST" action="{% url 'template_appointment:appointment_update' appointment_request.id %}" id="appointment-form">
             {% csrf_token %}
             <input type="hidden" name="doctor_id" value="{{ appointment.doctor.id }}">
             
@@ -42,13 +48,13 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label>Patient Name <span class="text-danger">*</span></label>
-                            <input class="form-control" type="text" name="patient_name" value="{{ appointment.clinic_patient.patient.name }}" required />
+                            <input class="form-control" type="text" name="patient_name" value="{% if appointment and appointment.clinic_patient.patient.name %}{{ appointment.clinic_patient.patient.name }}{% else %}{{ appointment_request.name|default:'' }}{% endif %}" required />
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
                             <label>Patient Phone Number <span class="text-danger">*</span></label>
-                            <input class="form-control" type="text" name="patient_phone" value="{{ phone_number }}" maxlength="10" pattern="[0-9]{10}" placeholder="10 digit phone number" required />
+                            <input class="form-control" type="text" name="patient_phone" value="{% if appointment and appointment.clinic_patient.patient.phone_number %}{{ appointment.clinic_patient.patient.phone_number }}{% else %}{{ appointment_request.phone|default:'' }}{% endif %}" maxlength="10" pattern="[0-9]{10}" placeholder="10 digit phone number" required />
                         </div>
                     </div>
                 </div>
@@ -59,7 +65,7 @@
                             <label>Patient Date of Birth <span class="text-danger"></span></label>
                             <div class="input-group date" id="patient_dob_picker" data-target-input="nearest">
                                 <input type="text" class="form-control datetimepicker-input" name="patient_dob" 
-                                       value="{{ appointment.clinic_patient.patient.date_of_birth|date:'d/m/Y' }}" 
+                                       value="{% if appointment and appointment.clinic_patient.patient.date_of_birth %}{{ appointment.clinic_patient.patient.date_of_birth|date:'d/m/Y' }}{% else %}{% if appointment_request.dob %}{{ appointment_request.dob|date:'d/m/Y' }}{% endif %}{% endif %}" 
                                        data-target="#patient_dob_picker" data-toggle="datetimepicker" 
                                        placeholder="DD/MM/YYYY"/>
                                 <div class="input-group-append" data-target="#patient_dob_picker" data-toggle="datetimepicker">
@@ -72,7 +78,7 @@
                         <div class="form-group">
                             <label>Patient Age</label>
                             <input class="form-control" type="number" name="patient_age" 
-                                   value="{{ appointment.clinic_patient.patient.age|default:'' }}" 
+                                   value="{% if appointment and appointment.clinic_patient.patient.age %}{{ appointment.clinic_patient.patient.age }}{% else %}{{ appointment_request.age|default:'' }}{% endif %}" 
                                    min="0" max="150" />
                         </div>
                     </div>
@@ -82,11 +88,15 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label>Patient Gender</label>
-                            <select class="form-control" name="patient_gender">
+                            <select class="form-control" name="patient_gender" required>
                                 <option value="">Select Gender</option>
                                 {% for value, label in gender_choices %}
                                     <option value="{{ value }}" 
-                                        {% if appointment.appointment_request.gender|lower == value|lower %}selected="selected"{% endif %}>
+                                        {% if appointment and appointment.clinic_patient.patient.gender %}
+                                        {% if appointment.clinic_patient.patient.gender|lower == value|lower %}selected="selected"{% endif %}
+                                    {% else %}
+                                        {% if appointment_request.gender|lower == value|lower %}selected="selected"{% endif %}
+                                    {% endif %}>
                                         {{ label }}
                                     </option>
                                 {% endfor %}
@@ -117,7 +127,10 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label>Token Number</label>
-                            <input class="form-control" type="text" value="{% if token_number %}{{ token_number }}{% else %}-{% endif %}" readonly>
+                            <input class="form-control" type="text" value="{{ token_number|default:'-' }}" readonly>
+                            {% if appointment_request %}
+                                <input type="hidden" name="token_number" value="{{ token_number|default:'' }}">
+                            {% endif %}
                         </div>
                     </div>
                 </div>
