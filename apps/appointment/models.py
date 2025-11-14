@@ -192,7 +192,7 @@ class AppointmentRequest(Base):
         with transaction.atomic():
             user, _ = User.objects.get_or_create(phone_number=self.phone)
 
-            patient, _ = Patient.objects.update_or_create(
+            patient, _ = Patient.objects.get_or_create(
                 phone_number=self.phone,
                 defaults={'name': self.name, 'age': self.age, 'user': user}
             )
@@ -202,11 +202,13 @@ class AppointmentRequest(Base):
                 patient=patient
             )
 
-            Appointment.objects.update_or_create(
+            Appointment.objects.get_or_create(
                 appointment_request=self,
                 defaults={
                     'clinic_patient': clinic_patient,
                     'appointment_status': AppointmentStatus.SCHEDULED,
+                    'appointment_date': self.confirmed_at.date(),
+                    'appointment_time': self.confirmed_at.time(),
                 }
             )
 

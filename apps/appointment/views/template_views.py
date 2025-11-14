@@ -127,7 +127,7 @@ class AppointmentListView(LoginRequiredMixin, View):
                     pass
 
             # Get appointment requests with related data
-            from django.db.models import Prefetch, OuterRef, Subquery
+            from django.db.models import OuterRef, Subquery
             
             # Subquery to get related appointment status if exists
             appointment_status_subquery = Appointment.objects.filter(
@@ -146,7 +146,7 @@ class AppointmentListView(LoginRequiredMixin, View):
             if search_query:
                 appointment_requests = appointment_requests.filter(
                     Q(name__icontains=search_query) |
-                    Q(phone__icontains(search_query)) |
+                    Q(phone__icontains=search_query) |
                     Q(request_token__icontains=search_query) |
                     Q(appointment_request_status__icontains=search_query)
                 )
@@ -469,8 +469,9 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
             context = {
                 'appointment': appointment,
                 'appointment_request': appointment_request,
-                'doctors': doctors,
-                'status_choices': AppointmentStatus.choices,
+                'doctor': appointment.doctor if appointment else doctors.first(),
+                'status_choices':  AppointmentStatus.choices if appointment_request.appointment_request_status == AppointmentRequestStatus.CONFIRMED and appointment else AppointmentRequestStatus.choices,
+                'appointmentreqest_status_choices': AppointmentRequestStatus.choices,
                 'gender_choices': Gender.choices,
                 'is_new': appointment is None
             }
@@ -558,20 +559,20 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                     appointment_request.gender = patient_gender
                     appointment_request.updated_by = request.user
 
-                    if status == AppointmentRequestStatus.CANCELLED:
-                        appointment_request.appointment_request_status = AppointmentRequestStatus.CANCELLED
-                        messages.info(request, "Appointment request was cancelled.")
-                    if status == AppointmentRequestStatus.PENDING:
-                        appointment_request.appointment_request_status =  AppointmentRequestStatus.PENDING
-                        messages.info(request, "Appointment request was pending.")
-                    elif appointment_request.appointment_request_status == AppointmentRequestStatus.CONFIRMED:
-                        user = User.objects.get(phone_number=patient_phone)
+                    # if status == AppointmentRequestStatus.CANCELLED:
+                    #     appointment_request.appointment_request_status = AppointmentRequestStatus.CANCELLED
+                    #     messages.info(request, "Appointment request was cancelled.")
+                    # if status == AppointmentRequestStatus.PENDING:
+                    #     appointment_request.appointment_request_status =  AppointmentRequestStatus.PENDING
+                    #     messages.info(request, "Appointment request was pending.")
+                    if appointment_request.appointment_request_status == AppointmentRequestStatus.CONFIRMED:
+                        appointment_request.appointment_request_status = AppointmentRequestStatus.CONFIRMED
 
                         patient = appointment.clinic_patient.patient
                         patient.name = patient_name
                         patient.age = int(patient_age) if patient_age else None
                         patient.phone_number = patient_phone
-                        patient.user = user
+                        # patient.user = user
                         if patient_dob_str:
                             try:
                                 patient.date_of_birth = get_date_obj(patient_dob_str)
@@ -580,7 +581,7 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                         patient.updated_by = request.user
                         patient.save()
 
-                        clinic = get_object_or_404(Clinic, id=clinic_id)
+                        # clinic = get_object_or_404(Clinic, id=clinic_id)
                         # clinic_patient, _ = ClinicPatient.objects.create(clinic=clinic, patient=patient)
                         # appointment.clinic_patient = clinic_patient
 
@@ -613,14 +614,17 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                         appointment_request.confirmed_at = timezone.now()
                         appointment_request.save()
                         messages.info(request, "Appointment request was cancelled.")
+                        
+                    elif status == AppointmentRequestStatus.PENDING:
+                        appointment_request.appointment_request_status = AppointmentRequestStatus.PENDING
+                        appointment_request.confirmed_at = timezone.now()
+                        appointment_request.save()
+                        messages.info(request, "Appointment request was pending.")
 
                     if status == AppointmentRequestStatus.CONFIRMED:
                         appointment_request.appointment_request_status = AppointmentRequestStatus.CONFIRMED
                         appointment_request.confirmed_at = timezone.now()
                         appointment_request.save()
-                
-                    
-
                         appointment = Appointment.objects.get(appointment_request=appointment_request)
                         if doctor_id:
                             appointment.doctor = get_object_or_404(ClinicUser, id=doctor_id, clinic_id=clinic_id)
@@ -662,20 +666,30 @@ class AppointmentDeleteView(LoginRequiredMixin, View):
                 messages.error(request, "No clinic selected.")
                 return redirect('dashboard')
 
-            appointment_id = kwargs.get('pk')
-            appointment = get_object_or_404(
-                Appointment,
-                id=appointment_id,
-                clinic_patient__clinic_id=clinic_id,
+            appointment_request_id = kwargs.get('pk')
+            appointment_request = get_object_or_404(
+                AppointmentRequest,
+                id=appointment_request_id,
+                clinic_id=clinic_id,
                 is_deleted=False
             )
 
-            # Soft delete the appointment
+            # Soft delete the appointment request and the appointment if it exists
             with transaction.atomic():
-                appointment.is_deleted = True
-                appointment.is_active = False
-                appointment.updated_by = request.user
-                appointment.save()
+                appointment_request.is_deleted = True
+                appointment_request.is_active = False
+                appointment_request.updated_by = request.user
+                appointment_request.save()
+
+                # Also delete the associated appointment if it exists
+                appointment = Appointment.objects.filter(
+                    appointment_request=appointment_request
+                ).first()
+                if appointment:
+                    appointment.is_deleted = True
+                    appointment.is_active = False
+                    appointment.updated_by = request.user
+                    appointment.save()
 
             messages.success(request, "Appointment deleted successfully.")
             return redirect(self.success_url)

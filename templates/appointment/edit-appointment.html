@@ -20,17 +20,13 @@
 {% block content %}
 <div class="row mb-3">
     <div class="col-sm-4 col-3">
-        <h4 class="page-title">
-            {% if is_new %}
-                New Appointment - {{ appointment.clinic_patient.patient.name|default:appointment_request.name }}
-            {% else %}
-                Edit Appointment - {{ appointment.clinic_patient.patient.name }}
-            {% endif %}
+        <h4 class="page-title"> 
+                Edit Appointment - {% if appointment %}{{ appointment.clinic_patient.patient.name }}{% else %}{{ appointment_request.name }}{% endif %} <span class="text-primary">#{{ appointment_request.request_token|default:'' }}</span>
         </h4>
     </div>
     <div class="col-sm-8 col-9 text-right">
         <button type="submit" form="appointment-form" class="btn btn-primary btn-rounded float-right">
-            <i class="fa fa-save"></i> {% if is_new %}Create{% else %}Update{% endif %} Appointment
+            <i class="fa fa-save"></i> Update Appointment
         </button>
     </div>
 </div>
@@ -39,7 +35,7 @@
     <div class="col-12">
         <form method="POST" action="{% url 'template_appointment:appointment_update' appointment_request.id %}" id="appointment-form">
             {% csrf_token %}
-            <input type="hidden" name="doctor_id" value="{{ appointment.doctor.id }}">
+            <input type="hidden" name="doctor_id" value="{{ doctor.id }}">
             
             <!-- Patient Details Section -->
             <div class="card-box mb-3">
@@ -138,8 +134,8 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label>Duration (minutes) <span class="text-danger">*</span></label>
-                            <input class="form-control" type="number" name="duration_minutes" value="{{ appointment.duration_minutes }}" min="5" max="480" required>
+                            <label>Duration (minutes) <span class="text-danger"></span></label>
+                            <input class="form-control" type="number" name="duration_minutes" value="{{ appointment.duration_minutes }}" min="5" max="480">
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -159,9 +155,12 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label>Status</label>
-                            <select class="form-control" name="appointment_status">
-                                {% for value, label in status_choices %}
-                                    <option value="{{ value }}" {% if appointment.appointment_status == value %}selected{% endif %}>
+                                <select class="form-control" name="appointment_status">
+                                    {% for value, label in status_choices %}
+                                    <option value="{{ value }}" 
+                                        {% if appointment.appointment_status == value %}selected
+                                        {% elif not appointment.appointment_status and value == appointment_request.appointment_request_status %}selected
+                                        {% endif %}>
                                         {{ label }}
                                     </option>
                                 {% endfor %}

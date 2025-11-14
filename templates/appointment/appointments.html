@@ -128,7 +128,7 @@
                         <th>Age</th>
                         <th>Amount</th>
                         <th>Status</th>
-                        <th>Action</th>
+                        <th data-orderable="false">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -161,13 +161,15 @@
                                 {% endwith %}
                             </td>
                             <td class="text-right">
-                                <button type="button" class="btn btn-sm btn-danger delete-btn" id="delete-appointment"
+                                <button type="button" class="btn btn-sm btn-danger delete-btn"
                                         data-toggle="modal" 
                                         data-target="#deleteModal"
+                                        data-appointment-id="{{ appointment.id }}"
                                         data-delete-url="{% url 'template_appointment:appointment_delete' appointment.id %}">
                                     <i class="fa fa-trash"> Delete</i>
                                 </button>
                             </td>
+
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -181,13 +183,13 @@
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <h5 class="modal-title">Confirm Delete</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body text-center">
-                <img src="{% static 'assets/img/sent.png' %}" alt="" width="50" height="46" class="mb-3">
+                <i class="fa fa-exclamation-triangle text-warning mb-3" style="font-size: 48px;"></i>
                 <h4>Are you sure you want to delete this appointment?</h4>
                 <p class="text-muted">This action cannot be undone.</p>
             </div>
@@ -254,7 +256,7 @@
         
         // Initialize and show toast
         $(toast).toast({ delay: 3000 }).toast('show');
-        
+
         // Remove toast after it's hidden
         $(toast).on('hidden.bs.toast', function () {
             $(this).remove();
@@ -288,26 +290,51 @@
                 });
             });
         });
-
-        // Make clickable cells show pointer cursor
-        document.querySelectorAll('.clickable-cell').forEach(cell => {
-            cell.style.cursor = 'pointer';
-        });
     });
-</script>
 
-<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
-<script src="{% static 'assets/js/dataTables.bootstrap4.min.js' %}"></script>
-
-<script>
-    // Handle delete button click
-    $(document).on('click', '.delete-btn', function() {
-        var deleteUrl = $(this).data('delete-url');
-        $('#deleteForm').attr('action', deleteUrl);
-    });
     $(function () {
+        // Initialize DataTable first
+        $('.datatable').DataTable();
+        
         $('.datetimepicker').datetimepicker({
             format: 'DD/MM/YYYY'
+        });
+
+        // Handle delete button click to set the correct URL
+        $(document).on('click', '.delete-btn', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            var deleteUrl = $(this).data('delete-url');
+            $('#deleteForm').attr('action', deleteUrl);
+        });
+
+        // Handle form submission
+        $('#deleteForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            var form = $(this);
+            var deleteUrl = form.attr('action');
+            
+            // Submit the form via AJAX
+            $.ajax({
+                url: deleteUrl,
+                type: 'POST',
+                data: form.serialize(),
+                success: function(response) {
+                    $('#deleteModal').modal('hide');
+                    showToast('success', 'Appointment deleted successfully');
+                    // Reload page after short delay to show toast
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1500);
+                },
+                error: function(xhr, status, error) {
+                    $('#deleteModal').modal('hide');
+                    showToast('error', 'Failed to delete appointment. Please try again.');
+                    console.error('Error deleting appointment:', error);
+                }
+            });
         });
 
         // Handle status update
@@ -358,14 +385,14 @@
             });
         });
 
-        // Handle delete appointment modal
-        document.querySelectorAll('.delete-appointment').forEach(button => {
-            button.addEventListener('click', function() {
-                const appointmentId = this.dataset.appointmentId;
-                const deleteForm = document.getElementById('deleteForm');
-                deleteForm.action = `/appointment/appointments/${appointmentId}/delete/`;
-            });
+        // Make clickable cells show pointer cursor
+        document.querySelectorAll('.clickable-cell').forEach(cell => {
+            cell.style.cursor = 'pointer';
         });
     });
 </script>
+
+<script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/dataTables.bootstrap4.min.js' %}"></script>
+
 {% endblock %}

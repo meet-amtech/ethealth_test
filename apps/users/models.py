@@ -69,7 +69,7 @@ class User(AbstractBaseUser, PermissionsMixin):
             if str(self.pk) == session.get_decoded().get('_auth_user_id'):
                 user_sessions.append(session.pk)
         return Session.objects.filter(pk__in=user_sessions).delete()
-
+        
 
 class OTP(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='otp')

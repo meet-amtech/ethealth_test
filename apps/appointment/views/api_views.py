@@ -1,3 +1,4 @@
+from email import message
 from rest_framework import viewsets, mixins, permissions
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed, ValidationError
@@ -23,15 +24,23 @@ class AppointmentRequestViewset(mixins.CreateModelMixin, mixins.RetrieveModelMix
     def perform_create(self, serializer):
         api_key = self.request.headers.get('x-api-key')
         if not api_key:
-            raise ValidationError({"message": "API key is required", "error": True})
+            raise ValidationError("API key is required")
 
         try:
             enc_dec = EncryptionDecryption(data=api_key)
             clinic_id = enc_dec.decrypt()
             if not clinic_id:
                 raise ValueError("Invalid clinic ID")
-        except Exception:
+                
+            # Check if clinic is accepting requests
+            clinic = Clinic.objects.filter(id=clinic_id, is_accepting_requests=True).first()
+            if not clinic:
+                raise ValidationError("Clinic is currently not accepting appointment requests")
+                
+        except ValueError as ve:
             raise AuthenticationFailed({"message": "Invalid API key", "error": True})
+        except Exception as e:
+            raise AuthenticationFailed({"message": str(e), "error": True})
 
         serializer.save(clinic_id=clinic_id)
 
