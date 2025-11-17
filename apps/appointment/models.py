@@ -186,7 +186,7 @@ class AppointmentRequest(Base):
 
     def _confirm_appointment(self):
         """
-        Creates or updates User, Patient, ClinicPatient, and Appointment records
+        Creates  User, Patient, ClinicPatient, and Appointment records
         when the request status is 'confirmed'.
         """
         with transaction.atomic():
@@ -194,7 +194,7 @@ class AppointmentRequest(Base):
 
             patient, _ = Patient.objects.get_or_create(
                 phone_number=self.phone,
-                defaults={'name': self.name, 'age': self.age, 'user': user}
+                name=self.name
             )
 
             clinic_patient, _ = ClinicPatient.objects.get_or_create(
