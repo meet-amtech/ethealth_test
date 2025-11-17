@@ -479,7 +479,7 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                     appointment_request.phone = patient_phone
                     appointment_request.age = int(patient_age) if patient_age else None
                     appointment_request.gender = patient_gender
-                    # appointment_request.updated_by = request.user
+                    appointment_request.updated_by = request.user
 
                     if appointment_request.appointment_request_status == AppointmentRequestStatus.CONFIRMED:
                         appointment_request.appointment_request_status = AppointmentRequestStatus.CONFIRMED
@@ -503,9 +503,18 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                         appointment.appointment_status = status
                         appointment.amount_to_pay = float(amount) if amount else 0.0
                         appointment.paid = paid
+                        if status == AppointmentStatus.SCHEDULED:
+                            appointment.status = AppointmentStatus.SCHEDULED
+                        elif status == AppointmentStatus.IN_PROGRESS:
+                            appointment.status = AppointmentStatus.IN_PROGRESS
+                        elif status == AppointmentStatus.COMPLETED:
+                            appointment.status = AppointmentStatus.COMPLETED
+                        elif status == AppointmentStatus.CANCELLED:
+                            appointment.status = AppointmentStatus.CANCELLED
                         appointment.notes = notes
                         appointment.feedback = feedback
                         appointment.updated_by = request.user
+                        appointment.save()
                     
                     messages.success(request, "Appointment updated successfully.")
                 else:
@@ -539,7 +548,7 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                         patient.gender = patient_gender
                         if patient_dob_str:
                             patient.date_of_birth = get_date_obj(patient_dob_str)
-                        # patient.updated_by = request.user
+                        patient.created_by = request.user
                         patient.save()
                         
                         appointment.appointment_date = appointment_datetime.date()
@@ -551,7 +560,7 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                         appointment.paid = paid
                         appointment.notes = notes
                         appointment.feedback = feedback
-                        # appointment.updated_by = request.user
+                        appointment.created_by = request.user
                         appointment.save()
                         messages.success(request, "Appointment created successfully.")
                     

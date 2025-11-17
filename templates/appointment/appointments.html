@@ -3,20 +3,30 @@
 {% load custom_filters %}
 
 {% block css %}
-
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/dataTables.bootstrap4.min.css' %}">
-
+<style>
+    /* keep your badge styles */
+    .custom-badge { padding: 4px 8px; border-radius: 12px; display: inline-block; font-size: 12px; }
+    .status-green { background:#e6ffed; color:#1f8a4f; border:1px solid #c7f0d1; }
+    .status-blue  { background:#e8f4ff; color:#2a7bd6; border:1px solid #cfe9ff; }
+    .status-red   { background:#ffeaea; color:#d33; border:1px solid #ffcdcd; }
+    .status-orange{ background:#fff6e6; color:#b36b00; border:1px solid #ffecce; }
+</style>
 {% endblock %}
 
 {% block content %}
+
 <div class="row">
     <div class="col-sm-4 col-3">
         <h4 class="page-title">Appointments</h4>
     </div>
     <div class="col-sm-8 col-9 text-right m-b-20">
-        <a href="{% url 'template_appointment:appointment_create' %}" class="btn btn btn-primary btn-rounded float-right"><i class="fa fa-plus"></i> Add Appointment</a>
+        <a href="{% url 'template_appointment:appointment_create' %}" class="btn btn-primary btn-rounded float-right">
+            <i class="fa fa-plus"></i> Add Appointment
+        </a>
     </div>
 </div>
+
 <!-- Filters -->
 <div class="row filter-row">
     <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12">
@@ -25,7 +35,9 @@
             <input type="text" id="search" class="form-control floating" value="{{search_query|default:''}}" placeholder="Name, Phone, Token...">
         </div>
     </div>
+
     <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12"></div>
+
     <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12">
         <div class="form-group form-focus">
             <label class="focus-label">From</label>
@@ -34,6 +46,7 @@
             </div>
         </div>
     </div>
+
     <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12">
         <div class="form-group form-focus">
             <label class="focus-label">To</label>
@@ -42,78 +55,33 @@
             </div>
         </div>
     </div>
+
     <div class="col-sm-6 col-md-3 col-lg-3 col-xl-2 col-12">
         <button type="button" id="filter_date" class="btn btn-success btn-block" onclick="validateAndFilter()">Search</button>
-        <script>
-            // Function to reinitialize floating labels
-            function reinitializeFloatingLabels() {
-                document.querySelectorAll('.form-control.floating').forEach((input) => {
-                    const formGroup = input.closest('.form-group');
-                    if (input.value) {
-                        formGroup.classList.add('focused');
-                    } else {
-                        formGroup.classList.remove('focused');
-                    }
-
-                    input.addEventListener('focus', () => {
-                        formGroup.classList.add('focused');
-                    });
-
-                    input.addEventListener('blur', () => {
-                        if (!input.value) {
-                            formGroup.classList.remove('focused');
-                        }
-                    });
-                });
-            }
-
-            function validateAndFilter() {
-              const startDate = document.getElementById('start_date').value;
-              const endDate = document.getElementById('end_date').value;
-              const search = document.getElementById('search').value;
-
-              if (!startDate || !endDate) {
-                alert('Please select both start and end dates');
-                return;
-              }
-
-              if (startDate > endDate) {
-                alert('Start date must be less than end date');
-                return;
-              }
-
-              const baseUrl = "{% url 'template_appointment:appointment_list' %}";
-              window.location.href = `${baseUrl}?start_date=${startDate}&end_date=${endDate}&search=${search}`;
-            }
-
-            // Prefill the input fields with values from the URL query parameters
-            function prefillDates() {
-              const urlParams = new URLSearchParams(window.location.search);
-              let startDate = urlParams.get('start_date');
-              let endDate = urlParams.get('end_date');
-
-              // Set default values if query parameters are not present
-              const today = new Date().toLocaleDateString('en-GB'); // Get today's date in DD/MM/YYYY format
-              if (!startDate) {
-                startDate = today; // Default to today's date
-              }
-              if (!endDate) {
-                endDate = today; // Default to today's date
-              }
-
-              document.getElementById('start_date').value = startDate;
-              document.getElementById('end_date').value = endDate;
-
-              // Reinitialize floating labels
-              reinitializeFloatingLabels();
-            }
-          
-            // Call prefillDates on page load
-            window.onload = prefillDates;
-        </script>
     </div>
 </div>
-<!-- Table content -->
+
+<script>
+function validateAndFilter() {
+    const startDate = document.getElementById('start_date').value;
+    const endDate = document.getElementById('end_date').value;
+    const search = document.getElementById('search').value;
+
+    if (!startDate || !endDate) {
+        alert('Please select both start and end dates');
+        return;
+    }
+    if (startDate > endDate) {
+        alert('Start date must be less than end date');
+        return;
+    }
+
+    const baseUrl = "{% url 'template_appointment:appointment_list' %}";
+    window.location.href = `${baseUrl}?start_date=${startDate}&end_date=${endDate}&search=${search}`;
+}
+</script>
+
+<!-- Table -->
 <div class="row">
     <div class="col-md-12">
         <div class="table-responsive">
@@ -133,21 +101,23 @@
                 </thead>
                 <tbody>
                     {% for appointment in appointments %}
-                        <tr data-href="{% url 'template_appointment:appointment_update' appointment.id %}" style="cursor: pointer;">
+                        <tr data-href="{% url 'template_appointment:appointment_update' appointment.id %}" style="cursor:pointer;">
                             <td class="clickable-cell">{{ appointment.token_number|default:'-' }}</td>
                             <td class="clickable-cell">{{ appointment.date_str|default:'-' }}</td>
                             <td class="clickable-cell">{{ appointment.time_str|default:'-' }}</td>
-                            <td class="clickable-cell">
-                                {{ appointment.clinic_patient.patient.name|default:'' }}
-                            </td>
+                            <td class="clickable-cell">{{ appointment.clinic_patient.patient.name|default:'' }}</td>
                             <td class="clickable-cell">{{ appointment.clinic_patient.patient.phone_number|default:'-' }}</td>
                             <td class="clickable-cell">{{ appointment.clinic_patient.patient.age|default:'-' }}</td>
-                            <td class="clickable-cell">{% if appointment.amount_to_pay %}₹{{ appointment.amount_to_pay|floatformat:2 }}{% else %}-{% endif %}</td>
+                            <td class="clickable-cell">
+                                {% if appointment.amount_to_pay %}₹{{ appointment.amount_to_pay|floatformat:2 }}{% else %}-{% endif %}
+                            </td>
+
+                            <!-- Restore badge rendering for status exactly like it was before -->
                             <td class="status-cell" data-appointment-id="{{ appointment.id }}">
                                 {% with status=appointment.appointment_status|default:'' %}
                                     {% if status|lower == 'completed' %}
                                         <span class="custom-badge status-green">Completed</span>
-                                    {% elif status|lower == 'in_progress' %}
+                                    {% elif status|lower == 'in_progress' or status|lower == 'in-progress' %}
                                         <span class="custom-badge status-blue">In Progress</span>
                                     {% elif status|lower == 'cancelled' %}
                                         <span class="custom-badge status-red">Cancelled</span>
@@ -160,16 +130,16 @@
                                     {% endif %}
                                 {% endwith %}
                             </td>
-                            <td class="text-right">
+
+                            <td class="text-right action-cell">
                                 <button type="button" class="btn btn-sm btn-danger delete-btn"
-                                        data-toggle="modal" 
+                                        data-toggle="modal"
                                         data-target="#deleteModal"
-                                        data-appointment-id="{{ appointment.id }}"
-                                        data-delete-url="{% url 'template_appointment:appointment_delete' appointment.id %}">
-                                    <i class="fa fa-trash"> Delete</i>
+                                        data-delete-url="{% url 'template_appointment:appointment_delete' appointment.id %}"
+                                        onclick="event.stopPropagation();">
+                                    <i class="fa fa-trash"></i> Delete
                                 </button>
                             </td>
-
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -184,7 +154,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Confirm Delete</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="$('#deleteModal').modal('hide')">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -206,193 +176,93 @@
 
 {% endblock %}
 
-<style>
-    .btn-status {
-        background: transparent;
-        border: none;
-        padding: 0;
-    }
-    .btn-status:focus {
-        outline: none;
-        box-shadow: none;
-    }
-    .dropdown-menu {
-        min-width: 10rem;
-    }
-    .status-option {
-        cursor: pointer;
-    }
-    .status-option:hover {
-        background-color: #f8f9fa;
-    }
-</style>
-
 {% block script %}
-<script>
-    // Function to show toast notification
-    function showToast(type, message) {
-        // Remove any existing toasts
-        const existingToast = document.querySelector('.toast');
-        if (existingToast) {
-            existingToast.remove();
-        }
 
-        // Create toast element
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        toast.setAttribute('role', 'alert');
-        toast.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 250px;';
-        
-        toast.innerHTML = `
-            <div class="toast-body">
-                <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-                ${message}
-            </div>
-        `;
-        
-        document.body.appendChild(toast);
-        
-        // Initialize and show toast
-        $(toast).toast({ delay: 3000 }).toast('show');
-
-        // Remove toast after it's hidden
-        $(toast).on('hidden.bs.toast', function () {
-            $(this).remove();
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        // Make table rows clickable
-        const rows = document.querySelectorAll('tr[data-href]');
-        
-        rows.forEach(row => {
-            // Make the entire row clickable
-            row.addEventListener('click', function(e) {
-                // Don't navigate if clicking on status or action columns or their children
-                if (e.target.closest('td:last-child') || e.target.closest('td:nth-last-child(2)')) {
-                    return;
-                }
-                // Don't navigate if clicking on a link or button
-                if (e.target.tagName === 'A' || e.target.closest('a, button, .dropdown, .dropdown-menu')) {
-                    return;
-                }
-                window.location.href = this.dataset.href;
-            });
-
-            // Make individual cells not trigger the row click when they have their own click handlers
-            const nonClickableCells = row.querySelectorAll('td:last-child, td:nth-last-child(2)');
-            nonClickableCells.forEach(cell => {
-                cell.style.cursor = 'default';
-                cell.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                });
-            });
-        });
-    });
-
-    $(function () {
-        // Initialize DataTable first
-        $('.datatable').DataTable();
-        
-        $('.datetimepicker').datetimepicker({
-            format: 'DD/MM/YYYY'
-        });
-
-        // Handle delete button click to set the correct URL
-        $(document).on('click', '.delete-btn', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            var deleteUrl = $(this).data('delete-url');
-            $('#deleteForm').attr('action', deleteUrl);
-        });
-
-        // Handle form submission
-        $('#deleteForm').on('submit', function(e) {
-            e.preventDefault();
-            
-            var form = $(this);
-            var deleteUrl = form.attr('action');
-            
-            // Submit the form via AJAX
-            $.ajax({
-                url: deleteUrl,
-                type: 'POST',
-                data: form.serialize(),
-                success: function(response) {
-                    $('#deleteModal').modal('hide');
-                    showToast('success', 'Appointment deleted successfully');
-                    // Reload page after short delay to show toast
-                    setTimeout(function() {
-                        location.reload();
-                    }, 1500);
-                },
-                error: function(xhr, status, error) {
-                    $('#deleteModal').modal('hide');
-                    showToast('error', 'Failed to delete appointment. Please try again.');
-                    console.error('Error deleting appointment:', error);
-                }
-            });
-        });
-
-        // Handle status update
-        document.querySelectorAll('.status-option').forEach(option => {
-            option.addEventListener('click', function(e) {
-                e.preventDefault();
-                const newStatus = this.dataset.status;
-                const appointmentId = this.closest('td').dataset.appointmentId;
-                const statusButton = this.closest('.dropdown').querySelector('.btn-status');
-                const originalHtml = statusButton.innerHTML;
-
-                if (confirm('Are you sure you want to update the status of this appointment?')) {
-                    // Show loading state
-                    statusButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Updating...';
-
-                    // Make AJAX request to update status
-                    fetch(`/appointment/api/appointments/${appointmentId}/status/`, {
-                        method: 'PATCH',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFTTOKEN': '{{ csrf_token }}'
-                        },
-                        body: JSON.stringify({
-                            appointment_status: newStatus
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        // Update the status button
-                        let badgeClass = 'status-orange';
-                        if (newStatus === 'completed') {
-                            badgeClass = 'status-green';
-                        } else if (newStatus === 'in_progress') {
-                            badgeClass = 'status-blue';
-                        } else if (newStatus === 'cancelled') {
-                            badgeClass = 'status-red';
-                        }
-                        
-                        statusButton.innerHTML = `<span class="custom-badge ${badgeClass}">${data.display_status}</span>`;
-                        showToast('success', 'Status updated successfully');
-                    })
-                    .catch(error => {
-                        console.error('Error updating status:', error);
-                        statusButton.innerHTML = originalHtml;
-                        showToast('error', 'Failed to update status. Please try again.');
-                    });
-                }
-            });
-        });
-
-        // Make clickable cells show pointer cursor
-        document.querySelectorAll('.clickable-cell').forEach(cell => {
-            cell.style.cursor = 'pointer';
-        });
-    });
-</script>
-
+<!-- Keep DataTables JS (requires jQuery) -->
 <script src="{% static 'assets/js/jquery.dataTables.min.js' %}"></script>
 <script src="{% static 'assets/js/dataTables.bootstrap4.min.js' %}"></script>
+
+<script>
+$(document).ready(function () {
+    // Initialize DataTable
+    $('.datatable').DataTable();
+
+    // Row click: navigate only when user clicks a clickable-cell (prevents navigation on status/action)
+    // This approach preserves previous behaviour: only some cells (clickable-cell) navigate.
+    $('.datatable tbody').on('click', 'tr', function (e) {
+        // If the click is inside a button, link, dropdown, or status cell, do not navigate
+        if ($(e.target).closest('button, a, .delete-btn, .action-cell, .status-cell, .dropdown, .dropdown-menu').length) {
+            return;
+        }
+
+        // If click is inside a cell that is explicitly clickable, navigate
+        if ($(e.target).closest('td.clickable-cell').length) {
+            const href = $(this).data('href');
+            if (href) {
+                window.location.href = href;
+            }
+        }
+    });
+});
+</script>
+
+<!-- Vanilla JS only for delete binding + fetch (keeps Bootstrap modal open/close via jQuery) -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const deleteForm = document.getElementById("deleteForm");
+
+    // Bind Delete Buttons (vanilla)
+    document.querySelectorAll(".delete-btn").forEach(button => {
+        button.addEventListener("click", function (e) {
+            e.stopPropagation(); // prevent row navigation
+
+            const url = this.getAttribute("data-delete-url");
+            deleteForm.setAttribute("action", url);
+
+            // Show bootstrap modal (Bootstrap4 needs jQuery)
+            $('#deleteModal').modal('show');
+        });
+    });
+
+    // Submit delete via Fetch
+    deleteForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const deleteUrl = deleteForm.getAttribute("action");
+        const formData = new FormData(deleteForm);
+
+        fetch(deleteUrl, {
+            method: "POST",
+            body: formData,
+            credentials: 'same-origin' // ensures CSRF cookie is sent if required
+        })
+        .then(response => {
+            // Optionally check response.status or JSON if your delete view returns data
+            $('#deleteModal').modal('hide');
+            showToast('success', 'Appointment deleted successfully');
+            setTimeout(() => location.reload(), 1100);
+        })
+        .catch(err => {
+            console.error('Delete error:', err);
+            $('#deleteModal').modal('hide');
+            showToast('error', 'Failed to delete appointment');
+        });
+    });
+});
+</script>
+
+<!-- Small toast helper -->
+<script>
+function showToast(type, message) {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 200px;';
+    toast.innerHTML = `<div class="toast-body">${message}</div>`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add('fadeOut');
+        setTimeout(() => toast.remove(), 400);
+    }, 2600);
+}
+</script>
 
 {% endblock %}
