@@ -20,72 +20,9 @@ from apps.appointment.models import (
 )
 from apps.clinic.models import Clinic, ClinicUser, ClinicUserRole, Gender
 from apps.users.models import User
-from apps.base.helpers import get_today_date_obj, get_date_str, get_date_obj, get_time_str, get_time_obj
+from apps.base.helpers import get_date_str, get_date_obj, get_time_str
 
 logger = logging.getLogger(__name__)
-
-
-class AppointmentRequestListView(LoginRequiredMixin, View):
-    """View for listing all appointment requests"""
-    template_name = "appointment/appointment-requests.html"
-    login_url = reverse_lazy('template_user:login')
-
-    def get(self, request, *args, **kwargs):
-        try:
-            clinic_id = request.session.get('clinic_id')
-            if not clinic_id:
-                messages.error(request, "No clinic selected.")
-                return redirect('dashboard')
-
-            # Get date filters from request
-            start_date = request.GET.get('start_date')
-            end_date = request.GET.get('end_date')
-            status_filter = request.GET.get('status', '')
-
-            # Build filters
-            filters = {
-                'clinic_id': clinic_id,
-                'is_deleted': False,
-                'is_active': True
-            }
-
-            # Apply date filters
-            if start_date:
-                try:
-                    filters['created_at__gte'] = get_date_obj(start_date)
-                except:
-                    pass
-            if end_date:
-                try:
-                    filters['created_at__lte'] = get_date_obj(end_date)
-                except:
-                    pass
-
-            # Apply status filter
-            if status_filter:
-                filters['appointment_request_status'] = status_filter
-
-            # Get appointment requests
-            appointment_requests = AppointmentRequest.objects.filter(
-                **filters
-            ).select_related('clinic').order_by('-created_at')
-
-            # Format dates for display
-            for req in appointment_requests:
-                req.created_at_str = get_date_str(req.created_at.date()) if req.created_at else ''
-                req.confirmed_at_str = get_date_str(req.confirmed_at.date()) if req.confirmed_at else ''
-
-            context = {
-                'appointment_requests': appointment_requests,
-                'status_choices': AppointmentRequestStatus.choices,
-                'current_status': status_filter,
-            }
-            return render(request, self.template_name, context)
-
-        except Exception as e:
-            logger.error(f"Error loading appointment requests: {str(e)}", exc_info=True)
-            messages.error(request, "Failed to load appointment requests.")
-            return redirect('dashboard')
 
 
 class AppointmentListView(LoginRequiredMixin, View):
@@ -115,16 +52,16 @@ class AppointmentListView(LoginRequiredMixin, View):
 
             # Apply date filters
             date_filter = {}
-            if start_date:
-                try:
-                    date_filter['appointment_date__gte'] = get_date_obj(start_date)
-                except:
-                    pass
-            if end_date:
-                try:
-                    date_filter['appointment_date__lte'] = get_date_obj(end_date)
-                except:
-                    pass
+            # if start_date:
+            #     try:
+            #         filters['appointment_date__gte'] = get_date_obj(start_date)
+            #     except:
+            #         pass
+            # if end_date:
+            #     try:
+            #         filters['appointment_date__lte'] = get_date_obj(end_date)
+            #     except:
+            #         pass
 
             # Get appointment requests with related data
             from django.db.models import OuterRef, Subquery
@@ -366,7 +303,7 @@ class AppointmentCreateView(LoginRequiredMixin, View):
                         patient.phone_number = patient_phone
                         changed = True
                     if changed:
-                        patient.updated_by = request.user
+                        # patient.updated_by = request.user
                         patient.save()
 
                 # Get or create clinic_patient
@@ -535,10 +472,6 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                 return redirect('template_appointment:appointment_edit', pk=appointment_request_id)
 
             with transaction.atomic():
-                # appointment = Appointment.objects.filter(
-                #     appointment_request=appointment_request,
-                #     is_deleted=False
-                # ).first()
                 appointment = appointment_request.appointments.first()
                 if appointment:
                     # Update existing appointment logic
@@ -546,11 +479,11 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                     appointment_request.phone = patient_phone
                     appointment_request.age = int(patient_age) if patient_age else None
                     appointment_request.gender = patient_gender
-                    appointment_request.updated_by = request.user
+                    # appointment_request.updated_by = request.user
 
                     if appointment_request.appointment_request_status == AppointmentRequestStatus.CONFIRMED:
                         appointment_request.appointment_request_status = AppointmentRequestStatus.CONFIRMED
-
+                        appointment_request.save()
                         patient = appointment.clinic_patient.patient
                         patient.name = patient_name
                         patient.age = int(patient_age) if patient_age else None
@@ -561,7 +494,7 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                                 patient.date_of_birth = get_date_obj(patient_dob_str)
                             except (ValueError, TypeError):
                                 messages.warning(request, "Invalid date of birth format. DOB not updated.")
-                        patient.updated_by = request.user
+                        # patient.updated_by = request.user
                         patient.save()
                         
                         appointment.appointment_date = appointment_datetime.date()
@@ -573,9 +506,7 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                         appointment.notes = notes
                         appointment.feedback = feedback
                         appointment.updated_by = request.user
-                        appointment.save()
-
-                    appointment_request.save()
+                    
                     messages.success(request, "Appointment updated successfully.")
                 else:
                     # Create new appointment logic
@@ -608,7 +539,7 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                         patient.gender = patient_gender
                         if patient_dob_str:
                             patient.date_of_birth = get_date_obj(patient_dob_str)
-                        patient.updated_by = request.user
+                        # patient.updated_by = request.user
                         patient.save()
                         
                         appointment.appointment_date = appointment_datetime.date()
@@ -616,17 +547,14 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                         appointment.duration_minutes = int(duration) if duration else 30
                         appointment.appointment_status = AppointmentStatus.SCHEDULED
                         appointment.amount_to_pay = float(amount) if amount else 0.0
-                        appointment.doctor = appointment_request.clinic.doctor
+                        appointment.doctor = appointment_request.clinic.clinic_users.filter(Q(role=ClinicUserRole.DOCTOR) | Q(role=ClinicUserRole.ADMIN)& Q(is_active=True)).first()
                         appointment.paid = paid
                         appointment.notes = notes
                         appointment.feedback = feedback
-                        appointment.updated_by = request.user
+                        # appointment.updated_by = request.user
                         appointment.save()
                         messages.success(request, "Appointment created successfully.")
-                    else:
-                        appointment_request.appointment_request_status = AppointmentRequestStatus.CANCELLED
-                        appointment_request.save()
-                        messages.info(request, "Appointment request was cancelled.")
+                    
 
             messages.success(request, "Appointment updated successfully.")
             return redirect(self.success_url)
@@ -664,15 +592,20 @@ class AppointmentDeleteView(LoginRequiredMixin, View):
                 appointment_request.updated_by = request.user
                 appointment_request.save()
 
-                # Also delete the associated appointment if it exists
-                appointment = Appointment.objects.filter(
-                    appointment_request=appointment_request
-                ).first()
+                appointment = appointment_request.appointments.first()
                 if appointment:
                     appointment.is_deleted = True
                     appointment.is_active = False
                     appointment.updated_by = request.user
                     appointment.save()
+                
+                clinic_patient = appointment.clinic_patient
+                if clinic_patient:
+                    clinic_patient.is_deleted = True
+                    clinic_patient.is_active = False
+                    clinic_patient.updated_by = request.user
+                    clinic_patient.save()
+        
 
             messages.success(request, "Appointment deleted successfully.")
             return redirect(self.success_url)

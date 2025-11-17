@@ -217,7 +217,7 @@ class AppointmentRequest(Base):
         if not self.request_token:
             self.request_token = self.generate_next_request_token()
         
-        if self.pk and self.appointment_request_status == AppointmentRequestStatus.CONFIRMED:
+        if self.pk and self.appointment_request_status == AppointmentRequestStatus.CONFIRMED and not Appointment.objects.filter(appointment_request=self).exists():
             self._confirm_appointment()
 
         super().save(*args, **kwargs)
