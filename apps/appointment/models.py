@@ -194,7 +194,8 @@ class AppointmentRequest(Base):
 
             patient, _ = Patient.objects.get_or_create(
                 phone_number=self.phone,
-                name=self.name
+                name=self.name,
+                user=user,
             )
 
             clinic_patient, _ = ClinicPatient.objects.get_or_create(

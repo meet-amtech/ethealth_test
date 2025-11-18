@@ -39,16 +39,20 @@
           <tr>
             <td
               {% if request.session.clinic_user_role|is_permission_granted:'doctor, staff' or request.session.is_clinic_admin %}
-                onclick="window.location.href='{% url 'template_clinic:opening_hour_update' request.session.clinic_id %}?{{ schedule.href_query_params }}'"
-                style="cursor: pointer;"
+                {% if schedule.availability_ids %}
+                  onclick="window.location.href='{% url 'template_clinic:opening_hour_update' schedule.availability_ids.0 %}'"
+                  style="cursor: pointer;"
+                {% endif %}
               {% endif %}
             >
               {{ request.session.clinic_name }}
             </td>
             <td
               {% if request.session.clinic_user_role|is_permission_granted:'doctor, staff' or request.session.is_clinic_admin %}
-                onclick="window.location.href='{% url 'template_clinic:opening_hour_update' request.session.clinic_id %}?{{ schedule.href_query_params }}'"
-                style="cursor: pointer;"
+                {% if schedule.availability_ids %}
+                  onclick="window.location.href='{% url 'template_clinic:opening_hour_update' schedule.availability_ids.0 %}'"
+                  style="cursor: pointer;"
+                {% endif %}
               {% endif %}
             >
               {% if schedule.days %}
@@ -59,32 +63,40 @@
             </td>
             <td
               {% if request.session.clinic_user_role|is_permission_granted:'doctor, staff' or request.session.is_clinic_admin %}
-                onclick="window.location.href='{% url 'template_clinic:opening_hour_update' request.session.clinic_id %}?{{ schedule.href_query_params }}'"
-                style="cursor: pointer;"
+                {% if schedule.availability_ids %}
+                  onclick="window.location.href='{% url 'template_clinic:opening_hour_update' schedule.availability_ids.0 %}'"
+                  style="cursor: pointer;"
+                {% endif %}
               {% endif %}
             >
               {{ schedule.start_time }}
             </td>
             <td
               {% if request.session.clinic_user_role|is_permission_granted:'doctor, staff' or request.session.is_clinic_admin %}
-                onclick="window.location.href='{% url 'template_clinic:opening_hour_update' request.session.clinic_id %}?{{ schedule.href_query_params }}'"
-                style="cursor: pointer;"
+                {% if schedule.availability_ids %}
+                  onclick="window.location.href='{% url 'template_clinic:opening_hour_update' schedule.availability_ids.0 %}'"
+                  style="cursor: pointer;"
+                {% endif %}
               {% endif %}
             >
               {{ schedule.end_time }}
             </td>
             <td
               {% if request.session.clinic_user_role|is_permission_granted:'doctor, staff' or request.session.is_clinic_admin %}
-                onclick="window.location.href='{% url 'template_clinic:opening_hour_update' request.session.clinic_id %}?{{ schedule.href_query_params }}'"
-                style="cursor: pointer;"
+                {% if schedule.availability_ids %}
+                  onclick="window.location.href='{% url 'template_clinic:opening_hour_update' schedule.availability_ids.0 %}'"
+                  style="cursor: pointer;"
+                {% endif %}
               {% endif %}
             >
               {{ schedule.break_start|default:'-' }}
             </td>
             <td
               {% if request.session.clinic_user_role|is_permission_granted:'doctor, staff' or request.session.is_clinic_admin %}
-                onclick="window.location.href='{% url 'template_clinic:opening_hour_update' request.session.clinic_id %}?{{ schedule.href_query_params }}'"
-                style="cursor: pointer;"
+                {% if schedule.availability_ids %}
+                  onclick="window.location.href='{% url 'template_clinic:opening_hour_update' schedule.availability_ids.0 %}'"
+                  style="cursor: pointer;"
+                {% endif %}
               {% endif %}
             >
               {{ schedule.break_end|default:'-' }}

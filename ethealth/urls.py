@@ -23,8 +23,7 @@ urlpatterns = [
     path("", DashboardView.as_view(), name="dashboard"),
     path("user/", include("apps.users.urls.template_urls", namespace="template_user"), name='users'),
     path("clinics/", include("apps.clinic.urls.template_urls", namespace="template_clinic"), name='clinics'),
-    path("appointments/", include("apps.appointment.urls.template_urls", namespace="template_appointment"), name='appointments'),
-    # path("doctors/", include("apps.clinic.urls.doctor_urls", namespace="doctor_availability"), name='doctors')
+    path("appointments/", include("apps.appointment.urls.template_urls", namespace="template_appointment"), name='appointments')
 ]
 
 

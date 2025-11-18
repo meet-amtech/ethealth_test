@@ -45,39 +45,30 @@ class AppointmentListView(LoginRequiredMixin, View):
 
             # Build base filters for AppointmentRequest
             filters = {
-                'clinic_id': clinic_id,
-                'is_deleted': False,
-                'is_active': True
+                'clinic_id': clinic_id
             }
 
             # Apply date filters
             date_filter = {}
-            # if start_date:
-            #     try:
-            #         filters['appointment_date__gte'] = get_date_obj(start_date)
-            #     except:
-            #         pass
-            # if end_date:
-            #     try:
-            #         filters['appointment_date__lte'] = get_date_obj(end_date)
-            #     except:
-            #         pass
-
-            # Get appointment requests with related data
-            from django.db.models import OuterRef, Subquery
-            
-            # Subquery to get related appointment status if exists
-            appointment_status_subquery = Appointment.objects.filter(
-                appointment_request_id=OuterRef('pk')
-            ).values('appointment_status')[:1]
+            if start_date:
+                try:
+                    filters['created_at__date__gte'] = get_date_obj(start_date)
+                except:
+                    pass
+            if end_date:
+                try:
+                    filters['created_at__date__lte'] = get_date_obj(end_date)
+                except:
+                    pass
 
             appointment_requests = AppointmentRequest.objects.filter(
                 **filters
-            ).annotate(
-                appointment_status=Subquery(appointment_status_subquery)
             ).select_related(
                 'clinic'
-            ).order_by('-created_at')
+            ).prefetch_related(
+                'appointments'
+            ).order_by('created_at')
+
 
             # Apply search filter
             if search_query:
@@ -117,7 +108,6 @@ class AppointmentListView(LoginRequiredMixin, View):
                     'amount_to_pay': getattr(appointment, 'amount_to_pay', None),
                     'appointment_status': req.appointment_status if is_confirmed and hasattr(req, 'appointment_status') and req.appointment_status else req.appointment_request_status,
                     'appointment_request': req,
-                    'is_confirmed': is_confirmed,
                     'doctor': getattr(appointment, 'doctor', None) if appointment else None
                 }
                 
@@ -140,12 +130,12 @@ class AppointmentListView(LoginRequiredMixin, View):
                 appointments.append(type('AppointmentObject', (), appointment_data))
 
             # Combine status choices from both models
-            status_choices = list(AppointmentRequestStatus.choices)
-            status_choices.extend([(f'appt_{status[0]}', status[1]) for status in AppointmentStatus.choices if status[0] not in [s[0] for s in status_choices]])
+            # status_choices = list(AppointmentRequestStatus.choices)
+            # status_choices.extend([(f'appt_{status[0]}', status[1]) for status in AppointmentStatus.choices if status[0] not in [s[0] for s in status_choices]])
             
             context = {
                 'appointments': appointments,
-                'status_choices': status_choices,
+                # 'status_choices': status_choices,
                 'current_status': status_filter,
                 'search_query': search_query,
             }
@@ -174,9 +164,7 @@ class AppointmentCreateView(LoginRequiredMixin, View):
             # Get doctors for this clinic
             doctor = ClinicUser.objects.filter(
                 clinic_id=clinic_id,
-                role__in=[ClinicUserRole.DOCTOR, ClinicUserRole.ADMIN],
-                is_active=True,
-                is_deleted=False
+                role=ClinicUserRole.ADMIN
             ).first()
 
             # Get clinic
@@ -207,7 +195,6 @@ class AppointmentCreateView(LoginRequiredMixin, View):
             patient_gender = request.POST.get('patient_gender', '')
             patient_phone = request.POST.get('patient_phone', '')
             patient_dob_str = request.POST.get('patient_dob', '').strip()
-            doctor_id = request.POST.get('doctor_id')
             appointment_datetime_str = request.POST.get('appointment_datetime')
             duration = request.POST.get('duration_minutes', '30')
             amount = request.POST.get('amount_to_pay', '').strip()
@@ -253,83 +240,9 @@ class AppointmentCreateView(LoginRequiredMixin, View):
             # Get or create patient and clinic_patient
             with transaction.atomic():
                 # Get clinic
-                clinic = get_object_or_404(Clinic, id=clinic_id, is_deleted=False)
-
-                # Parse patient date of birth if provided
-                patient_dob = None
-                if patient_dob_str:
-                    try:
-                        patient_dob = get_date_obj(patient_dob_str)
-                    except Exception:
-                        messages.warning(request, "Invalid date of birth format. Use DD/MM/YYYY. Skipping DOB.")
-
-                # Handle User creation/linking if phone number is provided
-                user_obj = None
-                if patient_phone:
-                    # Get or create User with phone number
-                    user_obj, user_created = User.objects.get_or_create(
-                        phone_number=patient_phone,
-                        defaults={'is_active': True}
-                    )
-
-                # Get or create patient (prefer by phone if provided)
-                patient = None
-                if patient_phone:
-                    patient = Patient.objects.filter(phone_number=patient_phone, is_deleted=False).first()
-                if not patient:
-                    patient, created = Patient.objects.get_or_create(
-                        name=patient_name,
-                        defaults={
-                            'age': int(patient_age) if patient_age else None,
-                            'date_of_birth': patient_dob if patient_dob else None,
-                            'phone_number': patient_phone,
-                            'created_by': request.user,
-                            'updated_by': request.user
-                        }
-                    )
-                else:
-                    created = False
-
-                # Update patient fields if provided and patient already exists
-                if not created:
-                    changed = False
-                    if patient_age:
-                        patient.age = int(patient_age)
-                        changed = True
-                    if patient_dob:
-                        patient.date_of_birth = patient_dob
-                        changed = True
-                    if patient_phone and patient.phone_number != patient_phone:
-                        patient.phone_number = patient_phone
-                        changed = True
-                    if changed:
-                        # patient.updated_by = request.user
-                        patient.save()
-
-                # Get or create clinic_patient
-                clinic_patient, created = ClinicPatient.objects.get_or_create(
-                    clinic=clinic,
-                    patient=patient,
-                    defaults={
-                        'created_by': request.user,
-                        'updated_by': request.user
-                    }
-                )
-
-                # Get doctor if provided
-                doctor = None
-                if doctor_id:
-                    doctor = ClinicUser.objects.filter(
-                        id=doctor_id,
-                        clinic_id=clinic_id,
-                        role__in=[ClinicUserRole.DOCTOR, ClinicUserRole.ADMIN],
-                        is_deleted=False
-                    ).first()
-
-                # Create appointment request for tracking
-                appointment_request = None
-                if patient_phone:
-                    appointment_request = AppointmentRequest.objects.create(
+                clinic = get_object_or_404(Clinic, id=clinic_id)
+                
+                appointment_request = AppointmentRequest.objects.create(
                         name=patient_name,
                         phone=patient_phone,
                         age=int(patient_age) if patient_age else None,
@@ -341,24 +254,32 @@ class AppointmentCreateView(LoginRequiredMixin, View):
                         created_by=request.user,
                         updated_by=request.user
                     )
-                
-                # Create appointment
-                appointment = Appointment.objects.create(
-                    clinic_patient=clinic_patient,
-                    doctor=doctor,
-                    appointment_date=appointment_date,
-                    appointment_time=appointment_time,
-                    duration_minutes=int(duration) if duration else 30,
-                    amount_to_pay=float(amount) if amount else None,
-                    notes=notes,
-                    appointment_status=AppointmentStatus.SCHEDULED,
-                    created_by=request.user,
-                    updated_by=request.user,
-                    appointment_request=appointment_request
-                )
+                appointment =  appointment_request.appointments.first()
+                clinic_patient = appointment.clinic_patient
+                clinic_patient.created_by =  request.user
+                clinic_patient.save()
 
-            messages.success(request, f"Appointment created successfully for {patient_name} on {get_date_str(appointment_date)} at {get_time_str(appointment_time)}.")
-            return redirect(self.success_url)
+                patient = clinic_patient.patient
+                patient.age = int(patient_age) if patient_age else None
+                patient.gender = patient_gender
+                if patient_dob_str:
+                    patient.date_of_birth = get_date_obj(patient_dob_str)
+                patient.created_by = request.user
+                patient.save()
+
+                appointment.appointment_date = appointment_datetime.date()
+                appointment.appointment_time = appointment_datetime.time()
+                appointment.duration_minutes = int(duration) if duration else 0
+                appointment.appointment_status = AppointmentStatus.SCHEDULED
+                appointment.amount_to_pay = float(amount) if amount else 0.0
+                appointment.doctor = appointment_request.clinic.clinic_users.filter(role=ClinicUserRole.ADMIN).first()
+                appointment.paid = False
+                appointment.notes = notes
+                appointment.created_by = request.user
+                appointment.save()
+                
+                messages.success(request, f"Appointment created successfully for {patient_name} on {get_date_str(appointment_date)} at {get_time_str(appointment_time)}.")
+                return redirect(self.success_url)
 
         except Exception as e:
             logger.error(f"Error creating appointment: {str(e)}", exc_info=True)
@@ -385,21 +306,19 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
             appointment_request = get_object_or_404(
                 AppointmentRequest,
                 id=appointment_request_id,
-                clinic_id=clinic_id,
-                is_deleted=False
+                clinic_id=clinic_id
             )
             appointment = appointment_request.appointments.first()    
             # Get doctor for this clinic
-            doctor = appointment_request.clinic.clinic_users.filter(role__in=[ClinicUserRole.DOCTOR, ClinicUserRole.ADMIN]).first()
+            doctor = appointment_request.clinic.clinic_users.filter(role=ClinicUserRole.ADMIN).first()
 
             context = {
                 'appointment': appointment,
                 'appointment_request': appointment_request,
                 'doctor': doctor,
-                'status_choices':  AppointmentStatus.choices if appointment_request.appointment_request_status == AppointmentRequestStatus.CONFIRMED and appointment else AppointmentRequestStatus.choices,
+                'status_choices':  AppointmentStatus.choices if appointment_request.appointment_request_status == AppointmentRequestStatus.CONFIRMED else AppointmentRequestStatus.choices,
                 'appointmentreqest_status_choices': AppointmentRequestStatus.choices,
-                'gender_choices': Gender.choices,
-                'is_new': appointment is None
+                'gender_choices': Gender.choices
             }
             
             if appointment:
@@ -437,8 +356,7 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
             appointment_request = get_object_or_404(
                 AppointmentRequest,
                 id=appointment_request_id,
-                clinic_id=clinic_id,
-                is_deleted=False
+                clinic_id=clinic_id
             )
 
             # Get form data
@@ -480,41 +398,38 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                     appointment_request.age = int(patient_age) if patient_age else None
                     appointment_request.gender = patient_gender
                     appointment_request.updated_by = request.user
+                    appointment_request.save()
 
-                    if appointment_request.appointment_request_status == AppointmentRequestStatus.CONFIRMED:
-                        appointment_request.appointment_request_status = AppointmentRequestStatus.CONFIRMED
-                        appointment_request.save()
-                        patient = appointment.clinic_patient.patient
-                        patient.name = patient_name
-                        patient.age = int(patient_age) if patient_age else None
-                        patient.phone_number = patient_phone
-                        # patient.user = user
-                        if patient_dob_str:
-                            try:
-                                patient.date_of_birth = get_date_obj(patient_dob_str)
-                            except (ValueError, TypeError):
-                                messages.warning(request, "Invalid date of birth format. DOB not updated.")
-                        # patient.updated_by = request.user
-                        patient.save()
-                        
-                        appointment.appointment_date = appointment_datetime.date()
-                        appointment.appointment_time = appointment_datetime.time()
-                        appointment.duration_minutes = int(duration) if duration else 30
-                        appointment.appointment_status = status
-                        appointment.amount_to_pay = float(amount) if amount else 0.0
-                        appointment.paid = paid
-                        if status == AppointmentStatus.SCHEDULED:
-                            appointment.status = AppointmentStatus.SCHEDULED
-                        elif status == AppointmentStatus.IN_PROGRESS:
-                            appointment.status = AppointmentStatus.IN_PROGRESS
-                        elif status == AppointmentStatus.COMPLETED:
-                            appointment.status = AppointmentStatus.COMPLETED
-                        elif status == AppointmentStatus.CANCELLED:
-                            appointment.status = AppointmentStatus.CANCELLED
-                        appointment.notes = notes
-                        appointment.feedback = feedback
-                        appointment.updated_by = request.user
-                        appointment.save()
+                    patient = appointment.clinic_patient.patient
+                    patient.name = patient_name
+                    patient.age = int(patient_age) if patient_age else None
+                    patient.phone_number = patient_phone
+                    if patient_dob_str:
+                        try:
+                            patient.date_of_birth = get_date_obj(patient_dob_str)
+                        except (ValueError, TypeError):
+                            messages.warning(request, "Invalid date of birth format. DOB not updated.")
+                    patient.updated_by = request.user
+                    patient.save()
+                    
+                    appointment.appointment_date = appointment_datetime.date()
+                    appointment.appointment_time = appointment_datetime.time()
+                    appointment.duration_minutes = int(duration) if duration else 30
+                    appointment.appointment_status = status
+                    appointment.amount_to_pay = float(amount) if amount else 0.0
+                    appointment.paid = paid
+                    if status == AppointmentStatus.SCHEDULED:
+                        appointment.status = AppointmentStatus.SCHEDULED
+                    elif status == AppointmentStatus.IN_PROGRESS:
+                        appointment.status = AppointmentStatus.IN_PROGRESS
+                    elif status == AppointmentStatus.COMPLETED:
+                        appointment.status = AppointmentStatus.COMPLETED
+                    elif status == AppointmentStatus.CANCELLED:
+                        appointment.status = AppointmentStatus.CANCELLED
+                    appointment.notes = notes
+                    appointment.feedback = feedback
+                    appointment.updated_by = request.user
+                    appointment.save()
                     
                     messages.success(request, "Appointment updated successfully.")
                 else:
@@ -543,7 +458,11 @@ class AppointmentUpdateView(LoginRequiredMixin, View):
                         appointment_request.save()
                         
                         appointment =  appointment_request.appointments.first()
-                        patient = appointment.clinic_patient.patient
+                        clinic_patient = appointment.clinic_patient
+                        clinic_patient.created_by =  request.user
+                        clinic_patient.save()
+
+                        patient = clinic_patient.patient
                         patient.age = int(patient_age) if patient_age else None
                         patient.gender = patient_gender
                         if patient_dob_str:
@@ -607,14 +526,6 @@ class AppointmentDeleteView(LoginRequiredMixin, View):
                     appointment.is_active = False
                     appointment.updated_by = request.user
                     appointment.save()
-                
-                clinic_patient = appointment.clinic_patient
-                if clinic_patient:
-                    clinic_patient.is_deleted = True
-                    clinic_patient.is_active = False
-                    clinic_patient.updated_by = request.user
-                    clinic_patient.save()
-        
 
             messages.success(request, "Appointment deleted successfully.")
             return redirect(self.success_url)

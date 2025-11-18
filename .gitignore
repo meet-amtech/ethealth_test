@@ -1,4 +1,4 @@
-.env
+.env*
 .DS_Store
 .idea/
 *.pyc
@@ -12,3 +12,4 @@ staticfiles
 
 .windsurf/rules/kluster-code-verify.md
 .kluster
+.vscode

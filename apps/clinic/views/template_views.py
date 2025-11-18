@@ -73,9 +73,7 @@ class OpeningHourListView(LoginRequiredMixin, View):
 
             # Fetch all doctor availabilities for the clinic
             availabilities = DoctorAvailability.objects.filter(
-                clinic=clinic,
-                is_deleted=False,
-                is_active=True
+                clinic=clinic
             ).select_related('doctor').order_by('weekday', 'start_time')
 
             # Group by time slots
@@ -274,8 +272,7 @@ class OpeningHourUpdateView(LoginRequiredMixin, View):
             availability = get_object_or_404(
                 DoctorAvailability,
                 id=kwargs.get('pk'),
-                clinic_id=clinic_id,
-                is_deleted=False
+                clinic_id=clinic_id
             )
 
             # Get the form with initial data
@@ -312,8 +309,7 @@ class OpeningHourUpdateView(LoginRequiredMixin, View):
             availability = get_object_or_404(
                 DoctorAvailability,
                 id=kwargs.get('pk'),
-                clinic_id=clinic_id,
-                is_deleted=False
+                clinic_id=clinic_id
             )
 
             # Get the form data

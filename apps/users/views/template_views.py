@@ -125,17 +125,7 @@ class OTPVerifyView(View):
             user_id = otp_instance.user.id
             # First check if user is admin of any clinic
             clinic_user = ClinicUser.get_admin_clinics(user_id=user_id).first()
-            # if not clinic_user:
-            #     # Check if user is doctor
-            #     clinic_user = ClinicUser.get_active_clinic_users(user_id=user_id, role=ClinicUserRole.DOCTOR.value).first()
-            # if not clinic_user:
-            #     # Check if user is visitor doctor
-            #     clinic_user = ClinicUser.get_active_clinic_users(user_id=user_id, role=ClinicUserRole.VISITING_DOCTOR.value).first()
-            # if not clinic_user:
-            #     # check if user is admin member at any club
-            #     clinic_user = ClinicUser.get_active_clinic_users(user_id=user_id, role=ClinicUserRole.ADMIN.value).first()
             if not clinic_user:
-                # check if user is staff member at any club
                 clinic_user = ClinicUser.get_active_clinic_users(clinic_id=clinic_user_instance.clinic_id,user_id=user_id, role=ClinicUserRole.STAFF.value).first()
 
             if not clinic_user:
@@ -175,6 +165,7 @@ class LogoutView(View):
             logout(request)
         messages.success(request=request, message="Logged out successfully.")
         return redirect(self.success_url)
+
 
 class UserProfileView(LoginRequiredMixin, View):
     template_name = 'user/profile.html'

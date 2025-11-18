@@ -13,4 +13,3 @@ class UserProfileForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.user:
             self.fields['phone_number'].initial = self.instance.user.phone_number
-            # self.fields['address'].initial = self.instance.user.address
